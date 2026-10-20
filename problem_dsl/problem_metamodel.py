@@ -1,7 +1,7 @@
-"""Problem DSL: knapsack feasibility (class C, problem 2).
+"""Problem DSL: knapsack feasibility (class C, problem 2), 0/1 version.
 
-Question: is there a choice of items whose total weight is <= capacity
-and whose total value is >= minValue?
+Question: is there a choice of items (each taken at most once) whose total
+weight is <= capacity and whose total value is >= minValue?
 """
 from besser.BUML.metamodel.structural import (
     DomainModel, Class, Property, BinaryAssociation, Multiplicity,
@@ -19,17 +19,15 @@ KnapsackProblem = Class(name="KnapsackProblem",
 item_name = Property(name="name", type=StringType)
 weight = Property(name="weight", type=IntegerType)
 value = Property(name="value", type=IntegerType)
-# How many copies of the item may be packed (1 = classic 0/1 knapsack).
-quantity = Property(name="quantity", type=IntegerType, default_value=1)
-Item = Class(name="Item", attributes={item_name, weight, value, quantity})
+Item = Class(name="Item", attributes={item_name, weight, value})
 
 # --- Associations ----------------------------------------------------------
 
+# "problem" is 0..1 rather than 1 so that neither class needs the other to be
+# created first; the composition already guarantees every Item has one owner.
 problem_items = BinaryAssociation(
     name="problem_items",
     ends={
-        # 0..1 avoids a mandatory creation cycle in BESSER; composition already
-        # guarantees each item belongs to a problem.
         Property(name="problem", type=KnapsackProblem, multiplicity=Multiplicity(0, 1)),
         Property(name="items", type=Item, multiplicity=Multiplicity(1, "*"),
                  is_composite=True),
@@ -50,8 +48,6 @@ constraints = {
                expression="context Item inv weightPositive: self.weight > 0"),
     Constraint(name="valueNonNegative", context=Item, language="OCL",
                expression="context Item inv valueNonNegative: self.value >= 0"),
-    Constraint(name="quantityPositive", context=Item, language="OCL",
-               expression="context Item inv quantityPositive: self.quantity >= 1"),
 }
 
 problem_metamodel = DomainModel(
@@ -60,4 +56,3 @@ problem_metamodel = DomainModel(
     associations={problem_items},
     constraints=constraints,
 )
-
