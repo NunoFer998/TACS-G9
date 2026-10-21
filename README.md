@@ -45,11 +45,11 @@ BESSER is installed from the course fork: [jacomecunha/BESSER](https://github.co
 
 **Problem DSL**
 
-![Problem DSL class diagram](docs/problem_class-diagram.png)
+![Problem DSL class diagram](problem_dsl/problem_class-diagram.png)
 
 **Solution DSL**
 
-![Solution DSL class diagram](docs/solution_class-diagram.png)
+![Solution DSL class diagram](solution_dsl/solution_class-diagram.png)
 
 ## Structure
 
