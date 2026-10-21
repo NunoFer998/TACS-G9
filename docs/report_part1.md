@@ -8,7 +8,7 @@ The following sections present the decisions and respective inspirations that de
 
 Concepts like Target Weight (C) and Target Value (C) were merged directly into the KnapsackProblem concept, rather that becoming standalone classes.
 
-We defined item quantity as `` quantity: Integer(>= 1, default 1)``, to support both 0/1 Knapsack [GJ79] and Bounded Knapsack [KPP04] // might change//
+We defined item quantity as `` quantity: Integer(>= 1, default 1)``, to support both 0/1 Knapsack [GJ79] and Bounded Knapsack [KPP04] 
 
 Other concepts like Total Weight or Value and their respective constraints are derived during Transformation *T1* as linear expressions and atoms to keep the input problem DSL clean
 
@@ -48,12 +48,12 @@ Search space was also limited with a 20-quibit upper bound to prevent memory ove
 
 ## References
 
-[GJ79] - M. Garey and D. Johnson. Computers and Intractability – A Guide to the Theory of NP-Completeness. Freeman and Company, New York, 1979.
+- [GJ79] - M. Garey and D. Johnson. Computers and Intractability – A Guide to the Theory of NP-Completeness. Freeman and Company, New York, 1979.
 
-[VBE96] - \\
+- [VBE96] -  V. Vedral, A. Barenco, A. Ekert. "Quantum networks for elementary arithmetic operations." Physical Review A, 1996.
 
-[CDKM04] - S. Cuccaro et al., “A new quantum ripple-carry addition circuit”, arXiv:quant-ph/0410184, 2004.
+- [CDKM04] - S. Cuccaro et al., “A new quantum ripple-carry addition circuit”, arXiv:quant-ph/0410184, 2004.
 
-[Dra00] - \\
+- [Dra00] - T. Draper. "Addition on a quantum computer." arXiv:quant-ph/0008033, 2000.
 
-All other considerations for model design were collected from Annex A of the TACS Assignment document.
+- Assignment: "TACS 2627 Assignment, QMDE"
