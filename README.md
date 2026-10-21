@@ -37,9 +37,9 @@ BESSER is installed from the course fork: [jacomecunha/BESSER](https://github.co
 | Solution DSL class diagram (with OCL) | [`solution_dsl/solution_class-diagram.png`](solution_dsl/solution_class-diagram.png) | Done |
 | Concept lists (problem + solution DSL) and problem → solution mapping, with references | [`docs/concept_list.md`](docs/concept_list.md) | Done |
 | Hand-built example models (problem + solution) | [Object tables, links, and expected T1 output](docs/example_object_models.md) | Done |
-| Test instances + brute-force checker | [`instances/`](instances/) | To do |
+| Test instances (benchmark selection) | [`instances/instances.md`](instances/instances.md) | Done |
 | Report | [`docs/report_part1.md`](docs/report_part1.md) | Done |
-| LLM usage log | [`LLM_LOG.md`](LLM_LOG.md) | In progress |
+| LLM usage log | [`LLM_LOG.md`](LLM_LOG.md) | Done |
 
 ### Diagrams
 
