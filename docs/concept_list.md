@@ -41,7 +41,10 @@ The **In metamodel** column says what each concept becomes in the metamodel.
 | Relation | The comparison an atom makes. | EQ (= 0), LE (≤ 0) | used by Atom | **enum** `Relation` | Annex A class C |
 | And / Or | True when all / at least one of the operands is true. | — | is a Formula; contains 2..* Formula | **classes** `And`, `Or` under abstract `Junction` | Annex A class C |
 | Linear Expression | a₀ + a₁y₁ + … + aₙyₙ. | constant: Integer (a₀) | contains 0..* Term; belongs to 1 Atom | **class** `LinearExpression` | Annex A class C |
-| Term | One coefficient times one unknown, aᵢ·yᵢ. | coefficient: Integer (≠ 0) | refers to 1 Unknown | **class** `Term` | Annex A class C |
+| Term | One coefficient times one unknown, aᵢ·yᵢ. | coefficient: Integer (≠ 0) | refers to 1 Unknown | **class** `Term` | Annex A class C | 
+Solver Config | How the search runs; kept out of the transformations. | iterations: Integer (≥ 0); shots: Integer (≥ 1); adder: AdderKind | belongs to 1 Constraint System | **class** `SolverConfig` | Annex B [Gro96, BBHT98] |
+| Adder Kind | Which reversible adder T2 builds. | RIPPLE_CARRY, QFT | used by Solver Config | **enum** `AdderKind` | [VBE96, CDKM04]; [Dra00] |
+| Expression Register | Two's-complement register of B bits that holds an expression's value in the oracle. | B: Integer (derived from the expression's min/max) | one per Linear Expression | **derived** (computed by T2, not stored) | Annex A class C (implementation notes) |
 
 
 ### OCL constraints (solution DSL)
@@ -82,5 +85,5 @@ The **In metamodel** column says what each concept becomes in the metamodel.
 - [VBE96] V. Vedral, A. Barenco, A. Ekert. "Quantum networks for elementary arithmetic operations." Physical Review A, 1996.
 - [CDKM04] S. Cuccaro et al. "A new quantum ripple-carry addition circuit." arXiv:quant-ph/0410184, 2004.
 - [Dra00] T. Draper. "Addition on a quantum computer." arXiv:quant-ph/0008033, 2000.
-- Assignment: "TACS 2627 Assignment, QMDE", Annex A, class C.
+- Assignment: "TACS 2627 Assignment, QMDE"
 
