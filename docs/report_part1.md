@@ -1,14 +1,14 @@
 # REPORT (Part I)
 
-The following sections present the decisions and respective inspirations that defined how we aproached the **Knapsack Feasibility** problem.
+The following sections present the decisions and respective inspirations that defined how we approached the **Knapsack Feasibility** problem.
 
 ## Problem DSL 
 
 ### Design Choices:
 
-Concepts like Target Weight (C) and Target Value (C) were merged directly into the KnapsackProblem concept, rather that becoming standalone classes.
+Concepts like Target Weight (C) and Target Value (C) were merged directly into the KnapsackProblem concept, rather than becoming standalone classes.
 
-We defined item quantity as `` quantity: Integer(>= 1, default 1)``, to support both 0/1 Knapsack [GJ79] and Bounded Knapsack [KPP04] // might change//
+We model the 0/1 Knapsack [GJ79]: each item can be selected at most once, so there is no item quantity (bounded knapsack [KPP04] is out of scope) and every decision variable needs a single bit.
 
 Other concepts like Total Weight or Value and their respective constraints are derived during Transformation *T1* as linear expressions and atoms to keep the input problem DSL clean
 
@@ -20,7 +20,7 @@ All other concepts were therefore defined as attributes or derived values, ensur
 
 ### OCL Constraints:
 
-Besides domain bound invariants like non-negative or strictly positive restraints for attributes like weight, value and quantity, there is also a uniqueness constraint on the KnapsackProblem to ensure distinct item objects.
+Besides domain bound invariants like non-negative or strictly positive restraints for attributes like capacity, minimum value, weight and value, there is also a uniqueness constraint on the KnapsackProblem to ensure distinct item objects.
 
 ## Solution DSL
 
@@ -44,16 +44,18 @@ Variable integrity constraints are required for decision variable name uniquenes
 
 Structural invariants for formula nodes and junction operands ensure a proper built abstract syntax tree.
 
-Search space was also limited with a 20-quibit upper bound to prevent memory overflow in validation testing.
+Search space was also limited with a 20-qubit upper bound to prevent memory overflow in validation testing.
 
 ## References
 
 [GJ79] - M. Garey and D. Johnson. Computers and Intractability – A Guide to the Theory of NP-Completeness. Freeman and Company, New York, 1979.
 
-[VBE96] - \\
+[VBE96] - V. Vedral, A. Barenco, A. Ekert. “Quantum networks for elementary arithmetic operations”, Physical Review A, 1996.
 
 [CDKM04] - S. Cuccaro et al., “A new quantum ripple-carry addition circuit”, arXiv:quant-ph/0410184, 2004.
 
-[Dra00] - \\
+[Dra00] - T. Draper. “Addition on a quantum computer”, arXiv:quant-ph/0008033, 2000.
+
+[KPP04] - H. Kellerer, U. Pferschy, D. Pisinger. Knapsack Problems. Springer, 2004.
 
 All other considerations for model design were collected from Annex A of the TACS Assignment document.

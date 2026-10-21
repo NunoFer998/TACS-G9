@@ -9,7 +9,7 @@ Class C: the problem is translated into a system of **linear integer constraints
 | Layer | Artefact | Status |
 |---|---|---|
 | Problem DSL | Knapsack problem metamodel + OCL ([`problem_metamodel.py`](problem_dsl/problem_metamodel.py)) | Part I |
-| Solution DSL | Linear integer constraints metamodel + OCL (`solution_dsl/`, _TBD_) | Part I |
+| Solution DSL | Linear integer constraints metamodel + OCL ([`solution_metamodel.py`](solution_dsl/solution_metamodel.py)) | Part I |
 | T1 | Problem model → solution model | Part II |
 | T2 | Solution model → BESSER quantum circuit model | Part II |
 | T3 | Quantum model → Qiskit code (BESSER generator) | Part II |
@@ -31,25 +31,25 @@ BESSER is installed from the course fork: [jacomecunha/BESSER](https://github.co
 
 | Deliverable | Reference | Status |
 |---|---|---|
-| Problem DSL metamodel + 6 OCL invariants | [`problem_dsl/problem_metamodel.py`](problem_dsl/problem_metamodel.py) | Done |
-| Solution DSL metamodel + OCL invariants | _TBD_ (`solution_dsl/`) | To do |
-| Problem DSL class diagram (with OCL) | [`docs/problem_class-diagram.png`](docs/problem_class-diagram.png) | Done |
-| Solution DSL class diagram (with OCL) | [`docs/solution_class-diagram.png`](docs/solution_class-diagram.png) | Done |
-| Concept lists (problem + solution DSL) and problem → solution mapping, with references | `docs/` | To do |
+| Problem DSL metamodel + 5 OCL invariants | [`problem_dsl/problem_metamodel.py`](problem_dsl/problem_metamodel.py) | Done |
+| Solution DSL metamodel + OCL invariants | [`solution_metamodel.py`](solution_dsl/solution_metamodel.py) | Done |
+| Problem DSL class diagram (with OCL) | [`problem_dsl/problem_class-diagram.png`](problem_dsl/problem_class-diagram.png) | Done |
+| Solution DSL class diagram (with OCL) | [`solution_dsl/solution_class-diagram.png`](solution_dsl/solution_class-diagram.png) | Done |
+| Concept lists (problem + solution DSL) and problem → solution mapping, with references | [`docs/concept_list.md`](docs/concept_list.md) | Done |
 | Hand-built example models (problem + solution) | [Object tables, links, and expected T1 output](docs/example_object_models.md) | Done |
 | Test instances + brute-force checker | [`instances/`](instances/) | To do |
-| Report | `docs/` | To do |
-| LLM usage log | [`LLM_LOG.md`](LLM_LOG.md) | To do |
+| Report | [`docs/report_part1.md`](docs/report_part1.md) | Done |
+| LLM usage log | [`LLM_LOG.md`](LLM_LOG.md) | In progress |
 
 ### Diagrams
 
 **Problem DSL**
 
-![Problem DSL class diagram](docs/problem_class-diagram.png)
+![Problem DSL class diagram](problem_dsl/problem_class-diagram.png)
 
 **Solution DSL**
 
-![Solution DSL class diagram](docs/solution_class-diagram.png)
+![Solution DSL class diagram](solution_dsl/solution_class-diagram.png)
 
 ## Structure
 
