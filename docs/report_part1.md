@@ -29,7 +29,7 @@ All atoms were standardized to zero-comparisons to simplify the transformation i
 
 Carrying **bitWidth** explicitly on the ``Unknown`` concept allows Transformation **T2** to directly calculate quantum register allocations in Qiskit without re-parsing variable bounds.
 
-Algorithmic execution parameters like `AdderKind`, `iterations` and  `shots` are isolated to keep the mathematical problem definition decoupled from backend execution choices.
+Algorithmic execution parameters like `AdderKind`, `iterations` and  `shots` are isolated to keep the mathematical problem definition decoupled from backend execution choices. `iterations` and `shots` are the knobs of the Grover search [Gro96, BBHT98] that T2/T3 will build on top of the constraint system.
 
 ### Metamodel:
 
@@ -49,16 +49,11 @@ Search space was also limited with a 20-qubit upper bound to prevent memory over
 
 ## References
 
-- [GJ79] - M. Garey and D. Johnson. Computers and Intractability – A Guide to the Theory of NP-Completeness. Freeman and Company, New York, 1979.
-
-[VBE96] - V. Vedral, A. Barenco, A. Ekert. “Quantum networks for elementary arithmetic operations”, Physical Review A, 1996.
-
-
-- [CDKM04] - S. Cuccaro et al., “A new quantum ripple-carry addition circuit”, arXiv:quant-ph/0410184, 2004.
-
-[Dra00] - T. Draper. “Addition on a quantum computer”, arXiv:quant-ph/0008033, 2000.
-
-[KPP04] - H. Kellerer, U. Pferschy, D. Pisinger. Knapsack Problems. Springer, 2004.
-
-
+- [GJ79] M. Garey and D. Johnson. Computers and Intractability – A Guide to the Theory of NP-Completeness. Freeman and Company, New York, 1979.
+- [KPP04] H. Kellerer, U. Pferschy, D. Pisinger. Knapsack Problems. Springer, 2004.
+- [Gro96] L. Grover. “A fast quantum mechanical algorithm for database search”, STOC, 1996.
+- [BBHT98] M. Boyer, G. Brassard, P. Høyer, A. Tapp. “Tight bounds on quantum searching”, Fortschritte der Physik, 1998.
+- [VBE96] V. Vedral, A. Barenco, A. Ekert. “Quantum networks for elementary arithmetic operations”, Physical Review A, 1996.
+- [CDKM04] S. Cuccaro et al., “A new quantum ripple-carry addition circuit”, arXiv:quant-ph/0410184, 2004.
+- [Dra00] T. Draper. “Addition on a quantum computer”, arXiv:quant-ph/0008033, 2000.
 - Assignment: "TACS 2627 Assignment, QMDE"
