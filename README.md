@@ -9,7 +9,7 @@ Class C: the problem is translated into a system of **linear integer constraints
 | Layer | Artefact | Status |
 |---|---|---|
 | Problem DSL | Knapsack problem metamodel + OCL ([`problem_metamodel.py`](problem_dsl/problem_metamodel.py)) | Part I |
-| Solution DSL | Linear integer constraints metamodel + OCL (`solution_dsl/`, _TBD_) | Part I |
+| Solution DSL | Linear integer constraints metamodel + OCL ([`solution_metamodel.py`](solution_dsl/solution_metamodel.py)) | Part I |
 | T1 | Problem model → solution model | Part II |
 | T2 | Solution model → BESSER quantum circuit model | Part II |
 | T3 | Quantum model → Qiskit code (BESSER generator) | Part II |
@@ -32,13 +32,13 @@ BESSER is installed from the course fork: [jacomecunha/BESSER](https://github.co
 | Deliverable | Reference | Status |
 |---|---|---|
 | Problem DSL metamodel + 6 OCL invariants | [`problem_dsl/problem_metamodel.py`](problem_dsl/problem_metamodel.py) | Done |
-| Solution DSL metamodel + OCL invariants | _TBD_ (`solution_dsl/`) | To do |
+| Solution DSL metamodel + OCL invariants | [`solution_dsl/solution_metamodel.py`](solution_dsl/solution_metamodel.py) | Done |
 | Problem DSL class diagram (with OCL) | [`docs/problem_class-diagram.png`](docs/problem_class-diagram.png) | Done |
 | Solution DSL class diagram (with OCL) | [`docs/solution_class-diagram.png`](docs/solution_class-diagram.png) | Done |
 | Concept lists (problem + solution DSL) and problem → solution mapping, with references | `docs/` | To do |
 | Hand-built example models (problem + solution) | [Object tables, links, and expected T1 output](docs/example_object_models.md) | Done |
 | Test instances + brute-force checker | [`instances/`](instances/) | To do |
-| Report | `docs/` | To do |
+| Report | [`docs/report_part1.md`](docs/report_part1.md) | To do |
 | LLM usage log | [`LLM_LOG.md`](LLM_LOG.md) | To do |
 
 ### Diagrams
