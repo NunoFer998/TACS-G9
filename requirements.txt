@@ -1,1 +1,3 @@
 besser @ git+https://github.com/jacomecunha/BESSER.git
+qiskit==2.6.1
+qiskit-aer==0.18.0
