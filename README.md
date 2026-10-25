@@ -51,15 +51,32 @@ BESSER is installed from the course fork: [jacomecunha/BESSER](https://github.co
 
 ![Solution DSL class diagram](solution_dsl/solution_class-diagram.png)
 
+## Part II deliverables
+
+Deadline: November 11 (assignment §7.4).
+
+| Deliverable | Reference | Status |
+|---|---|---|
+| M2M transformation T1 (problem → solution model) | — | To do |
+| M2M transformation T2 (solution → BESSER quantum model) | — | To do |
+| Qiskit code generated with the BESSER M2T generator | — | To do |
+| Test instances written in the problem DSL (≥3, incl. several and no solutions) | [`models/instances.py`](models/instances.py) | Done |
+| Working demo with a single documented command | — | To do |
+| Classical baseline (brute force + DP): the correct answer for each instance | [`validation/baseline.py`](validation/baseline.py) | Done |
+| Validation: Aer simulation results vs. the classical baseline (success probability, oracle calls) | — | To do (needs T2 + generated Qiskit code) |
+| Report (~2 pages) | [`docs/report_part2.md`](docs/report_part2.md) | In progress (instances + baseline written) |
+| LLM usage log | [`LLM_LOG.md`](LLM_LOG.md) | To do |
+
 ## Structure
 
 | Folder | Content |
 |---|---|
 | [`problem_dsl/`](problem_dsl/) | Problem metamodel + OCL |
 | [`solution_dsl/`](solution_dsl/) | Solution metamodel + OCL |
-| [`models/`](models/) | Example models |
+| [`models/`](models/) | Problem DSL object models of the test instances |
+| [`validation/`](validation/) | Classical baseline and validation |
 | [`instances/`](instances/) | Test instances + brute-force checker |
-| [`docs/`](docs/) | Reports, concept tables, diagrams |
+| [`docs/`](docs/) | Reports (incl. [`report_part2.md`](docs/report_part2.md)), concept tables, diagrams |
 | [`LLM_LOG.md`](LLM_LOG.md) | LLM usage log |
 
 ## Group
