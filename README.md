@@ -16,14 +16,18 @@ Class C: the problem is translated into a system of **linear integer constraints
 
 ## Setup
 
-Requires Python 3.10–3.12 (BESSER does not install on 3.13).
+Requires Python 3.11–3.12 (the BESSER fork needs ≥3.11 and does not install on 3.13).
 
 ```bash
 python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python -c "import besser; print('BESSER ok')"
+python -m transformations.t1    # T1 self-check on all test instances
 ```
+
+On Windows, if the BESSER install fails with `Filename too long`, run
+`git config --global core.longpaths true` once and install again.
 
 BESSER is installed from the course fork: [jacomecunha/BESSER](https://github.com/jacomecunha/BESSER)
 
@@ -57,7 +61,7 @@ Deadline: November 11 (assignment §7.4).
 
 | Deliverable | Reference | Status |
 |---|---|---|
-| M2M transformation T1 (problem → solution model) | — | To do |
+| M2M transformation T1 (problem → solution model) | [`transformations/t1.py`](transformations/t1.py) | Done (self-check vs brute force; run `python -m transformations.t1`) |
 | M2M transformation T2 (solution → BESSER quantum model) | — | To do |
 | Qiskit code generated with the BESSER M2T generator | — | To do |
 | Test instances written in the problem DSL (≥3, incl. several and no solutions) | [`models/instances.py`](models/instances.py) | Done |
