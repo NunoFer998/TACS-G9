@@ -143,26 +143,69 @@ def transform(source: ObjectModel, settings: SolverSettings = None):
     return ObjectModel(name=f"{pname}_solution", objects=objs), trace
 
 
-def run_file(path, out_dir="out/t1"):
-    """Run T1 on the object model of an editor-exported .py and save the solution model."""
+def save(model, out_dir="out/t1"):
+    """Save a solution model (metamodel + objects) to out_dir/<model name>.py; returns the path."""
     import os
-    import runpy
     from besser.BUML.metamodel.project import Project
     from besser.BUML.metamodel.structural.structural import Metadata
     from besser.utilities.buml_code_builder.project_builder import project_to_code
     from solution_dsl.solution_metamodel import solution_metamodel
 
-    source = runpy.run_path(path)["object_model"]
-    model, _ = transform(source)
     os.makedirs(out_dir, exist_ok=True)
     out = os.path.join(out_dir, f"{model.name}.py")
     project_to_code(Project(name=model.name, models=[solution_metamodel, model],
-                                 metadata=Metadata(description="T1 output")), out)
-    print(f"{path}: {len(model.objects)} objects -> {out}")
+                            metadata=Metadata(description="T1 output")), out)
     # ponytail: no .json export, the converter is missing from the installed besser wheel
+    return out
+
+
+def run_file(path, out_dir="out/t1"):
+    """Run T1 on the object model of an editor-exported .py and save the solution model."""
+    import runpy
+    model, _ = transform(runpy.run_path(path)["object_model"])
+    print(f"{path}: {len(model.objects)} objects -> {save(model, out_dir)}")
     return model
+
+
+def _linked(obj, end):
+    """Objects linked to obj through the association end named `end`."""
+    return [c.object for l in obj.links for c in l.connections
+            if c.name == end and c.object is not obj]
+
+
+def solutions_of(model):
+    """Read the solution model back: all 0/1 assignments where every atom e <= 0 holds."""
+    from itertools import product
+    system = _objects_of(model, "ConstraintSystem")[0]
+    ys = sorted(_linked(system, "unknowns"), key=lambda u: _slot(u, "name"))
+    atoms = _linked(_linked(system, "root")[0], "operands")
+    out = []
+    for bits in product((0, 1), repeat=len(ys)):
+        val = {u: b for u, b in zip(ys, bits)}
+        if all(_slot(e, "constant") + sum(_slot(t, "coefficient") * val[_linked(t, "unknown")[0]]
+               for t in _linked(e, "terms")) <= 0 for e in (_linked(a, "expression")[0] for a in atoms)):
+            out.append(bits)
+    return out
+
+
+def check(source):
+    """Self-check: solutions of the T1 output == brute force on the problem. Returns (n, ok)."""
+    from validation.baseline import read_problem, brute_force
+    _, cap, v, items = read_problem(source)
+    expected = brute_force(cap, v, items)
+    got = solutions_of(transform(source)[0])
+    # unknown order is sorted by name(y_<item>), baseline sorts items by name: same order
+    return len(expected), sorted(got) == sorted(expected)
 
 
 if __name__ == "__main__":
     import sys
-    run_file(sys.argv[1])
+    args = sys.argv[1:]
+    if args and args[0].endswith(".py"):
+        run_file(args[0])
+    else:                                    # instance names from models/instances.py (default: all)
+        from models.instances import INSTANCES
+        for name in args or INSTANCES:
+            n, ok = check(INSTANCES[name])
+            out = save(transform(INSTANCES[name])[0])
+            print(f"{name:10s} solutions={n:2d}  T1 matches brute force: {'OK' if ok else 'FAIL'}  -> {out}")

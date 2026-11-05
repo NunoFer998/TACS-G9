@@ -31,6 +31,20 @@ On Windows, if the BESSER install fails with `Filename too long`, run
 
 BESSER is installed from the course fork: [jacomecunha/BESSER](https://github.com/jacomecunha/BESSER)
 
+## Run T1 and check the result
+
+From the repo root, with the venv active:
+
+```bash
+python -m transformations.t1                 # T1 on every instance in models/instances.py + check; saves out/t1/<instance>_solution.py
+python -m transformations.t1 f4 f4_multi     # only some instances
+python -m transformations.t1 problem_dsl/problem_objectmodel.py   # an editor-exported model; saves out/t1/<name>_solution.py
+```
+
+The check reads the T1 output back (all 0/1 assignments satisfying every `e <= 0` atom) and compares it with the
+brute-force baseline. Expected output: `OK` on every line (`toy`, `tiny`, `f4`, `f4_none`, `f7_sub5`, `f4_multi` with 5 solutions).
+Any `FAIL` means T1 changed the problem's meaning.
+
 ## Part I deliverables
 
 | Deliverable | Reference | Status |

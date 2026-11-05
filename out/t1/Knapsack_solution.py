@@ -78,20 +78,6 @@ SolverConfig_adder: Property = Property(name="adder", type=AdderKind)
 SolverConfig.attributes={SolverConfig_adder, SolverConfig_iterations, SolverConfig_shots}
 
 # Relationships
-term_unknown: BinaryAssociation = BinaryAssociation(
-    name="term_unknown",
-    ends={
-        Property(name="usedBy", type=Term, multiplicity=Multiplicity(0, 9999)),
-        Property(name="unknown", type=Unknown, multiplicity=Multiplicity(1, 1))
-    }
-)
-system_config: BinaryAssociation = BinaryAssociation(
-    name="system_config",
-    ends={
-        Property(name="configOf", type=ConstraintSystem, multiplicity=Multiplicity(1, 1)),
-        Property(name="config", type=SolverConfig, multiplicity=Multiplicity(0, 1), is_composite=True)
-    }
-)
 system_unknowns: BinaryAssociation = BinaryAssociation(
     name="system_unknowns",
     ends={
@@ -125,6 +111,20 @@ expression_terms: BinaryAssociation = BinaryAssociation(
     ends={
         Property(name="expr", type=LinearExpression, multiplicity=Multiplicity(1, 1)),
         Property(name="terms", type=Term, multiplicity=Multiplicity(0, 9999), is_composite=True)
+    }
+)
+term_unknown: BinaryAssociation = BinaryAssociation(
+    name="term_unknown",
+    ends={
+        Property(name="usedBy", type=Term, multiplicity=Multiplicity(0, 9999)),
+        Property(name="unknown", type=Unknown, multiplicity=Multiplicity(1, 1))
+    }
+)
+system_config: BinaryAssociation = BinaryAssociation(
+    name="system_config",
+    ends={
+        Property(name="configOf", type=ConstraintSystem, multiplicity=Multiplicity(1, 1)),
+        Property(name="config", type=SolverConfig, multiplicity=Multiplicity(0, 1), is_composite=True)
     }
 )
 
@@ -195,7 +195,7 @@ shotsPositive: Constraint = Constraint(
 domain_model = DomainModel(
     name="LinearConstraintsDSL",
     types={ConstraintSystem, Unknown, Formula, Atom, Junction, And, Or, LinearExpression, Term, SolverConfig, Relation, AdderKind},
-    associations={term_unknown, system_config, system_unknowns, system_root, junction_operands, atom_expression, expression_terms},
+    associations={system_unknowns, system_root, junction_operands, atom_expression, expression_terms, term_unknown, system_config},
     constraints={bitWidthPositive, uniqueUnknownNames, searchSpaceSimulable, coefficientNonZero, oneTermPerUnknown, singleParent, noSelfOperand, iterationsNonNegative, shotsPositive},
     generalizations={gen_Atom_Formula, gen_Junction_Formula, gen_And_Junction, gen_Or_Junction},
     metadata=None
@@ -224,22 +224,22 @@ knapsack_y_item_2_obj = Unknown("Knapsack_y_Item_2").attributes(name="y_Item_2",
 knapsack_y_item_3_obj = Unknown("Knapsack_y_Item_3").attributes(name="y_Item_3", bitWidth=1).build()
 knapsack_y_item_4_obj = Unknown("Knapsack_y_Item_4").attributes(name="y_Item_4", bitWidth=1).build()
 
-knapsack_value_atom_obj.expression = knapsack_v_e_obj
-knapsack_w_e_obj.terms = {knapsack_w_t_item_1_obj, knapsack_w_t_item_2_obj, knapsack_w_t_item_3_obj, knapsack_w_t_item_4_obj}
-knapsack_weight_atom_obj.expression = knapsack_w_e_obj
-knapsack_obj.config = knapsack_config_obj
-knapsack_w_t_item_2_obj.unknown = knapsack_y_item_2_obj
-knapsack_v_t_item_2_obj.unknown = knapsack_y_item_2_obj
-knapsack_v_t_item_4_obj.unknown = knapsack_y_item_4_obj
+knapsack_root_obj.operands = {knapsack_value_atom_obj, knapsack_weight_atom_obj}
 knapsack_v_e_obj.terms = {knapsack_v_t_item_1_obj, knapsack_v_t_item_2_obj, knapsack_v_t_item_3_obj, knapsack_v_t_item_4_obj}
 knapsack_obj.unknowns = {knapsack_y_item_1_obj, knapsack_y_item_2_obj, knapsack_y_item_3_obj, knapsack_y_item_4_obj}
-knapsack_w_t_item_4_obj.unknown = knapsack_y_item_4_obj
-knapsack_root_obj.operands = {knapsack_value_atom_obj, knapsack_weight_atom_obj}
-knapsack_w_t_item_1_obj.unknown = knapsack_y_item_1_obj
+knapsack_w_e_obj.terms = {knapsack_w_t_item_1_obj, knapsack_w_t_item_2_obj, knapsack_w_t_item_3_obj, knapsack_w_t_item_4_obj}
 knapsack_v_t_item_1_obj.unknown = knapsack_y_item_1_obj
 knapsack_v_t_item_3_obj.unknown = knapsack_y_item_3_obj
-knapsack_w_t_item_3_obj.unknown = knapsack_y_item_3_obj
+knapsack_w_t_item_2_obj.unknown = knapsack_y_item_2_obj
+knapsack_w_t_item_4_obj.unknown = knapsack_y_item_4_obj
 knapsack_obj.root = knapsack_root_obj
+knapsack_value_atom_obj.expression = knapsack_v_e_obj
+knapsack_weight_atom_obj.expression = knapsack_w_e_obj
+knapsack_w_t_item_1_obj.unknown = knapsack_y_item_1_obj
+knapsack_obj.config = knapsack_config_obj
+knapsack_v_t_item_2_obj.unknown = knapsack_y_item_2_obj
+knapsack_v_t_item_4_obj.unknown = knapsack_y_item_4_obj
+knapsack_w_t_item_3_obj.unknown = knapsack_y_item_3_obj
 
 # Object Model instance
 object_model: ObjectModel = ObjectModel(
