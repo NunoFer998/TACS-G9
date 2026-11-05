@@ -45,6 +45,39 @@ The check reads the T1 output back (all 0/1 assignments satisfying every `e <= 0
 brute-force baseline. Expected output: `OK` on every line (`toy`, `tiny`, `f4`, `f4_none`, `f7_sub5`, `f4_multi` with 5 solutions).
 Any `FAIL` means T1 changed the problem's meaning.
 
+## Run T2 and check the result
+ 
+T2 ([`transformations/t2.py`](transformations/t2.py)) turns the T1 solution model into a BESSER `QuantumCircuit`
+(Grover search; oracle built only from X / Z / H gates with controls: CDKM ripple-carry adders, sign/zero comparator,
+one flag qubit per atom, phase kickback on a `|->` qubit). From the repo root, with the venv active:
+ 
+```bash
+python -m transformations.t2                 # T1 -> T2 -> Qiskit code -> Aer on every instance in models/instances.py
+python -m transformations.t2 toy f4_multi    # only some instances
+```
+ 
+In code: `circuit, layout = t2(solution_model, iterations=R)`; generate Qiskit with BESSER's `QiskitGenerator`;
+`decode_bitstring(key, layout)` / `decode_items(key, layout)` map a measured bitstring back to the unknowns / item names.
+ 
+For each instance the check does three things:
+ 
+1. **Oracle** (classical simulation of the reversible gates): for all 2^n inputs the phase qubit is flipped exactly for the
+   assignments T1's solution model accepts (T1 itself is checked against the brute-force baseline), and every
+   expression / carry / flag ancilla is back to `0`.
+2. **Aer** (only if the circuit has <= 20 qubits and the instance has some but not all assignments as solutions): the
+   generated Qiskit script is run and the fraction of shots that decode to a valid assignment must be > 70%.
+3. It prints one line per instance. Expected output: `oracle OK` on every line, and `Aer <valid>/<shots> valid` (about
+   95-99% with the optimal number of Grover rounds) on every line that was simulated:
+```
+toy      n=3 qubits=15 B=4 solutions=1 oracle OK | Aer 980/1024 valid, top=['a', 'b']
+f4_multi n=4 qubits=20 B=6 solutions=5 oracle OK | Aer 991/1024 valid, top=['i1', 'i4']
+f4_none  n=4 qubits=20 B=6 solutions=0 oracle OK
+```
+ 
+`f4_none` (no solution) and `f7_sub5` (25 qubits) only get the oracle check: Grover is not meaningful without
+solutions, and simulating more than ~20 qubits is too slow. The number of Grover rounds in this check is
+`floor(pi / (4 asin(sqrt(M/2^n))))` with M taken from the baseline; in the full pipeline it comes from `SolverSettings.iterations`.
+
 ## Part I deliverables
 
 | Deliverable | Reference | Status |
