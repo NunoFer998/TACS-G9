@@ -47,36 +47,27 @@ Any `FAIL` means T1 changed the problem's meaning.
 
 ## Run T2 and check the result
  
-T2 ([`transformations/t2.py`](transformations/t2.py)) turns the T1 solution model into a BESSER `QuantumCircuit`
-(Grover search; oracle built only from X / Z / H gates with controls: CDKM ripple-carry adders, sign/zero comparator,
-one flag qubit per atom, phase kickback on a `|->` qubit). From the repo root, with the venv active:
+From the repo root, with the venv active:
  
 ```bash
-python -m transformations.t2                 # T1 -> T2 -> Qiskit code -> Aer on every instance in models/instances.py
-python -m transformations.t2 toy f4_multi    # only some instances
+python -m transformations.t2                 # T1 -> T2 -> Qiskit code (BESSER generator) -> Aer on every instance in models/instances.py + check
+python -m transformations.t2 f4 f4_multi     # only some instances
 ```
  
-In code: `circuit, layout = t2(solution_model, iterations=R)`; generate Qiskit with BESSER's `QiskitGenerator`;
-`decode_bitstring(key, layout)` / `decode_items(key, layout)` map a measured bitstring back to the unknowns / item names.
+The check builds the circuit with T2 and compares it with the T1 solution model (which T1 already checks against the
+brute-force baseline): the oracle (simulated classically on all 2^n inputs) must mark exactly the solutions and leave every
+ancilla at `0`; then, for instances with some but not all assignments as solutions and at most 20 qubits, the generated Qiskit
+script is run on Aer and more than 70% of the shots must decode to a valid assignment. Expected output: `oracle OK` on every
+line, plus `Aer <valid>/<shots> valid` (about 96-97%) on the simulated ones (`toy`, `tiny`, `f4`, `f4_multi`);
+`f4_none` (no solution) and `f7_sub5` (25 qubits) only get the oracle check. Any assertion error means T2 changed the problem's meaning.
  
-For each instance the check does three things:
- 
-1. **Oracle** (classical simulation of the reversible gates): for all 2^n inputs the phase qubit is flipped exactly for the
-   assignments T1's solution model accepts (T1 itself is checked against the brute-force baseline), and every
-   expression / carry / flag ancilla is back to `0`.
-2. **Aer** (only if the circuit has <= 20 qubits and the instance has some but not all assignments as solutions): the
-   generated Qiskit script is run and the fraction of shots that decode to a valid assignment must be > 70%.
-3. It prints one line per instance. Expected output: `oracle OK` on every line, and `Aer <valid>/<shots> valid` (about
-   95-99% with the optimal number of Grover rounds) on every line that was simulated:
 ```
 toy      n=3 qubits=15 B=4 solutions=1 oracle OK | Aer 980/1024 valid, top=['a', 'b']
-f4_multi n=4 qubits=20 B=6 solutions=5 oracle OK | Aer 991/1024 valid, top=['i1', 'i4']
 f4_none  n=4 qubits=20 B=6 solutions=0 oracle OK
 ```
  
-`f4_none` (no solution) and `f7_sub5` (25 qubits) only get the oracle check: Grover is not meaningful without
-solutions, and simulating more than ~20 qubits is too slow. The number of Grover rounds in this check is
-`floor(pi / (4 asin(sqrt(M/2^n))))` with M taken from the baseline; in the full pipeline it comes from `SolverSettings.iterations`.
+T2 is in [`transformations/t2.py`](transformations/t2.py): `t2(solution_model, iterations=R)` returns the BESSER circuit and its
+qubit layout; `decode_items(bitstring, layout)` maps a measured bitstring back to item names.
 
 ## Part I deliverables
 
