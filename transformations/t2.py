@@ -363,9 +363,9 @@ def decode_items(bitstring: str, layout: Layout) -> List[str]:
 def _self_check(names=None, max_aer_qubits: int = 20) -> None:
     """For each instance: T1 -> T2, check the oracle classically, run on Aer, compare."""
     import itertools
+    import os
     import subprocess
     import sys
-    import tempfile
 
     from besser.generators.qiskit import QiskitGenerator
     from models.instances import INSTANCES
@@ -387,9 +387,9 @@ def _self_check(names=None, max_aer_qubits: int = 20) -> None:
         msg = f"{name:8s} n={L.n} qubits={L.total} B={L.B} solutions={len(truth)} oracle OK"
         if L.total <= max_aer_qubits and 0 < len(truth) < (1 << L.n):
             circ, L = build_circuit_from_spec(spec)
-            d = tempfile.mkdtemp(prefix="t2_")
+            d = os.path.join("out", "t3", name)
+            os.makedirs(d, exist_ok=True)
             QiskitGenerator(circ, output_dir=d, shots=spec.shots).generate()
-            import os
             env = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8")   # Windows: qc.draw() is non-ASCII
             res = subprocess.run([sys.executable, f"{d}/qiskit_circuit.py"], capture_output=True,
                                  text=True, encoding="utf-8", errors="replace", env=env)
