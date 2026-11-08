@@ -14,16 +14,18 @@ where `bits(e)` is the smallest two's complement width that holds every value `e
 
 With this estimate, f7 needs about 22 qubits and f1 about 30, which is past what we can simulate. We kept f4 unchanged and reworked the rest:
 
-| Instance | Role (Annex A) | n | C | V | Solutions (M) | ≈ Qubits |
-|---|---|---|---|---|---|---|
-| toy | tiny, checkable by hand (Part I example) | 3 | 5 | 7 | 1 | 11 |
-| tiny | Annex A example | 4 | 10 | 15 | 1 | 14 |
-| f4 | medium, known optimum (Pisinger, unchanged) | 4 | 11 | 23 | 1 | 15 |
-| f4_multi | several solutions | 4 | 11 | 16 | 5 | 15 |
-| f4_none | no solution | 4 | 11 | 24 | 0 | 15 |
-| f7_sub5 | near the 20-qubit limit | 5 | 25 | 46 | 1 | 20 |
+| Instance | Role (Annex A) | n | C | V | Solutions (M) | ≈ Qubits (estimate) | Qubits (T2) |
+|---|---|---|---|---|---|---|---|
+| toy | tiny, checkable by hand (Part I example) | 3 | 5 | 7 | 1 | 11 | 15 |
+| tiny | Annex A example | 4 | 10 | 15 | 1 | 14 | 18 |
+| f4 | medium, known optimum (Pisinger, unchanged); near the 20-qubit limit | 4 | 11 | 23 | 1 | 15 | 20 |
+| f4_multi | several solutions | 4 | 11 | 16 | 5 | 15 | 20 |
+| f4_none | no solution | 4 | 11 | 24 | 0 | 15 | 20 |
+| f7_sub5 | larger instance, oracle checked classically only | 5 | 25 | 46 | 1 | 20 | 25 |
 
 f7_sub5 keeps the first five items of f7 with the capacity to half (C = 25) and V set to the new optimum. The instances with several solutions and with none reuse f4 and only change V: below the optimum several subsets qualify, and above it (V = Opt + 1) none can. f1 is left out of the simulated tests and is mentioned as a limitation. All instances are written as problem DSL object models in `models/instances.py`; the original list stays in `instances/instances.md`.
+
+After implementing T2 we had to revisit this table a second time. The estimate above counts only the item qubits and one register per constraint. The adder used in T2 [CDKM04] shares a single expression register between the two constraints, but it also needs a temporary register of the same width, a carry qubit, one flag qubit per constraint and a phase qubit, so the real circuits are 4 to 5 qubits larger (column "Qubits (T2)"). f4 and its two variants land exactly on 20 qubits, so f4 now also plays the "near the 20-qubit limit" role. f7_sub5 grew to 25 qubits: we kept it, but only check its oracle classically on all 2^5 inputs and do not simulate it (see Limitations).
 
 ## Classical baseline
 
@@ -56,6 +58,7 @@ Reproduce with `python -m validation.baseline`.
 
 ## References
 
+- [CDKM04] S. A. Cuccaro, T. G. Draper, S. A. Kutin, D. P. Moulton. "A new quantum ripple-carry addition circuit", arXiv:quant-ph/0410184, 2004.
 - [KPP04] H. Kellerer, U. Pferschy, D. Pisinger. Knapsack Problems. Springer, 2004.
 - [BBHT98] M. Boyer, G. Brassard, P. Høyer, A. Tapp. “Tight bounds on quantum searching”, Fortschritte der Physik, 1998.
 - [Pis] D. Pisinger, low-dimensional 0/1 knapsack instances, as collected in https://github.com/dnlfm/knapsack-01-instances/tree/main/pisinger_instances_01_KP/low-dimensional
