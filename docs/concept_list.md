@@ -44,7 +44,7 @@ The **In metamodel** column says what each concept becomes in the metamodel.
 | Term | One coefficient times one unknown, aᵢ·yᵢ. | coefficient: Integer (≠ 0) | refers to 1 Unknown | **class** `Term` | Annex A class C |
 | Solver Config | How the search runs; kept out of the transformations. | iterations: Integer (≥ 0); shots: Integer (≥ 1); adder: AdderKind | belongs to 1 Constraint System | **class** `SolverConfig` | Annex B [Gro96, BBHT98] |
 | Adder Kind | Which reversible adder T2 builds. | RIPPLE_CARRY, QFT | used by Solver Config | **enum** `AdderKind` | [VBE96, CDKM04]; [Dra00] |
-| Expression Register | Two's-complement register of B bits that holds an expression's value in the oracle. | B: Integer (derived from the expression's min/max) | one per Linear Expression | **derived** (computed by T2, not stored) | Annex A class C (implementation notes) |
+| Expression Register | Two's-complement register of B bits that holds an expression's value in the oracle. | B: Integer (derived from the expression's min/max) | one per Linear Expression | **derived** (computed by T2, not stored) | Annex A class C (implementation notes); [NC10] |
 
 
 ### OCL constraints (solution DSL)
@@ -75,6 +75,40 @@ The **In metamodel** column says what each concept becomes in the metamodel.
 | Item.name | Unknown.name (e.g. y_a), used to decode the answer | traceability choice |
 | Selection | (not mapped: read back from the measured bits of yᵢ in Part II) | — |
 
+## 4. Mapping solution → quantum circuit (seed of T2)
+
+T2 builds the oracle only from primitive gates (X, Z, H with optional controls), so the BESSER Qiskit generator
+never emits placeholders for high-level arithmetic or comparison gates.
+
+| Solution element | Quantum circuit element | Reference |
+|---|---|---|
+| Constraint System | 1 `QuantumCircuit`: one quantum register `q`, one classical register `c` with n bits | Annex A class C |
+| Unknown yₖ (w bits) | w search qubits (LSB first), each put in superposition with H; bits are read back by `Unknown.name` | [Gro96]; traceability choice |
+| Linear Expression | Expression Register of B bits (smallest B whose two's-complement range holds the expression's min and max), temp register of B qubits, 1 carry ancilla; shared by all atoms | [NC10]; Annex A class C (implementation notes) |
+| constant a₀ | X gates that load a₀ mod 2ᴮ into the expression register | [NC10] |
+| Term aᵢ·yᵢ | yᵢ-controlled addition of aᵢ mod 2ᴮ: CX yᵢ → temp bits, adder, CX again (controlled load / unload) | [CDKM04]; [VBE96] |
+| Adder Kind = RIPPLE_CARRY | MAJ/UMA ripple-carry adder with one carry ancilla (Adder Kind = QFT: not implemented) | [CDKM04]; [Dra00] |
+| Atom LE | comparator: flag ⊕= [e < 0] ⊕ [e = 0] (sign bit, and zero test with X gates and one multi-controlled X); 1 flag qubit per atom | [NC10]; Annex A class C |
+| Atom EQ | zero test only | [NC10] |
+| root And | multi-controlled X from all flag qubits onto the phase qubit, which is in \|−⟩ (phase kickback) | [BBC+95]; [CEMM98] |
+| Or | not supported by T2 (T1 never creates it) | — |
+| (compute, mark, uncompute) | the flag blocks are run backwards after marking, so expression, temp, carry and flag qubits return to \|0⟩ | [Ben73] |
+| (diffuser) | H, X, multi-controlled Z, X, H on the search register | [Gro96] |
+| Solver Config.iterations | R repetitions of oracle + diffuser (default ⌊π / (4 asin √(M/N))⌋ for M solutions, N = 2ⁿ) | [Gro96]; [BBHT98]; Annex B |
+| Solver Config.shots, backend | shots of the Qiskit script generated in T3 (Aer simulator); the script is saved as `out/t3/<instance>/qiskit_circuit.py` | Annex B |
+| Selection | measurement of the n search qubits; `decode_bitstring` / `decode_items` map the bits to Unknowns and item names | Annex A class C; traceability choice |
+
+Qubit layout (single register `q`, indices in order):
+
+| Qubits | Content |
+|---|---|
+| 0 … n−1 | search register (unknown k, bit j at offset_k + j) |
+| n … n+B−1 | expression register e |
+| n+B … n+2B−1 | temp register t (holds aᵢ while it is added) |
+| n+2B | carry ancilla |
+| next m | one flag per atom |
+| last | phase qubit in \|−⟩ |
+
 ## References
 
 - [GJ79] M. R. Garey, D. S. Johnson. *Computers and Intractability: A Guide to the Theory of NP-Completeness.* W. H. Freeman, 1979 (appendix, problem MP9 "Knapsack").
@@ -84,5 +118,9 @@ The **In metamodel** column says what each concept becomes in the metamodel.
 - [VBE96] V. Vedral, A. Barenco, A. Ekert. "Quantum networks for elementary arithmetic operations." Physical Review A, 1996.
 - [CDKM04] S. Cuccaro et al. "A new quantum ripple-carry addition circuit." arXiv:quant-ph/0410184, 2004.
 - [Dra00] T. Draper. "Addition on a quantum computer." arXiv:quant-ph/0008033, 2000.
+- [BBC+95] A. Barenco, C. H. Bennett, R. Cleve, D. P. DiVincenzo, N. Margolus, P. Shor, T. Sleator, J. Smolin, H. Weinfurter. "Elementary gates for quantum computation." Physical Review A, 1995.
+- [CEMM98] R. Cleve, A. Ekert, C. Macchiavello, M. Mosca. "Quantum algorithms revisited." Proceedings of the Royal Society A, 1998.
+- [Ben73] C. H. Bennett. "Logical reversibility of computation." IBM Journal of Research and Development, 1973.
+- [NC10] M. A. Nielsen, I. L. Chuang. *Quantum Computation and Quantum Information.* Cambridge University Press, 10th anniversary edition, 2010.
 - Assignment: "TACS 2627 Assignment, QMDE"
 

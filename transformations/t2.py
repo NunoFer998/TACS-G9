@@ -1,7 +1,24 @@
-"""
-T2 (M2M): Solution DSL (ConstraintSystem)  ->  BESSER QuantumCircuit (Grover oracle search).
+"""T2 (M2M): linear-constraint solution model -> BESSER QuantumCircuit (Grover search).
 
 Pipeline position:  Problem DSL --T1--> Solution DSL --T2--> Quantum DSL --T3--> Qiskit code
+
+Rules (traceable to docs/concept_list.md section 4 and the references there):
+  R1  ConstraintSystem -> QuantumCircuit (one quantum register q, classical register c of n bits)   Annex A class C
+  R2  Unknown y_k, w bits -> w search qubits (LSB first), put in uniform superposition with H        [Gro96]
+  R3  LinearExpression a0 + sum(a_i y_i) -> expression register of B bits, two's complement;
+      a0 loaded with X gates                                                                         [NC10]; Annex A class C
+  R4  Term a_i*y_i -> y_i-controlled addition of a_i into the expression register,
+      ripple-carry adder (CDKM; QFT adder not implemented)                                           [CDKM04]; [VBE96]; [Dra00]
+  R5  Atom LE / EQ -> comparator (sign bit and zero test) that sets one flag qubit per atom          [NC10]; Annex A class C
+  R6  root And -> multi-controlled X from all flags onto the phase qubit in |->  (Or: not supported) [BBC+95]; [CEMM98]
+  R7  compute flags, mark, then run the compute blocks backwards (uncompute: all gates self-inverse)   [Ben73]
+  R8  Grover diffuser H X (multi-controlled Z) X H on the search register                            [Gro96]
+  R9  SolverConfig.iterations -> number of rounds R (default floor(pi / (4 asin(sqrt(M/N)))));
+      shots / backend are used by T3                                                                 [Gro96]; [BBHT98]; Annex B
+  R10 Measure the search qubits; decode_bitstring / decode_items map them back to Unknown.name
+      and item names                                                                                 traceability choice
+  R11 The circuit goes to BESSER's QiskitGenerator (T3); the self-check saves the generated script
+      to out/t3/<instance>/qiskit_circuit.py and runs it on the Aer simulator                         Annex B
 
 Design
 ------
@@ -10,12 +27,11 @@ Design
   No ArithmeticGate / ComparisonGate, so the Qiskit generator never emits placeholders.
   (PhaseGateZ and CXGate are avoided on purpose: BESSER's Qiskit generator only maps
   PauliZGate / PauliXGate-with-controls reliably.)
-* Every atom  e <= 0  (e = a0 + sum a_i*y_i) is evaluated into a two's-complement
-  register, compared (sign bit OR zero), written to a flag qubit, and uncomputed.
-  The expression/temporary/carry registers are shared by all atoms.
-* Adder: CDKM04 (Cuccaro) ripple-carry, modular, one carry ancilla.  A controlled
-  constant addition "e += a_i if y_i" is done as: controlled-load a_i into a temp
-  register t (CX y_i -> t_j), e += t, controlled-unload.
+* The expression / temporary / carry registers are shared by all atoms: each atom is
+  computed, compared into its own flag qubit and uncomputed before the next one is needed.
+* A controlled constant addition "e += a_i if y_i" is done as: controlled-load a_i into a
+  temp register t (CX y_i -> t_j), e += t, controlled-unload.  The CDKM adder is modular
+  and needs one carry ancilla.
 * Phase kickback: the phase qubit is prepared in |-> and the flags are the controls of
   an MCX onto it (a multi-controlled Z on |-> would NOT kick back a phase).
 
@@ -31,7 +47,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from besser.BUML.metamodel.quantum import (
     ClassicalRegister, ControlState, HadamardGate, Measurement, PauliXGate,
@@ -94,7 +110,7 @@ Op = Tuple[str, int, Tuple[int, ...]]   # (gate, target, controls)  gate in {"X"
 
 
 # --------------------------------------------------------------------------- #
-# Reading the ConstraintSystem (BESSER ObjectModel produced by T1)
+# Reading the ConstraintSystem (BESSER ObjectModel produced by T1)   [R1, R2, R3 inputs]
 # --------------------------------------------------------------------------- #
 
 def _slot(obj, name):
@@ -168,11 +184,11 @@ def extract_spec(solution_model, iterations: Optional[int] = None) -> SystemSpec
 
 
 # --------------------------------------------------------------------------- #
-# Gate-list construction (pure Python, classically simulable)
+# Gate-list construction (pure Python, classically simulable)   [R2-R8]
 # --------------------------------------------------------------------------- #
 
 def _register_width(atoms: Sequence[AtomSpec]) -> int:
-    """Smallest B such that every atom's [emin, emax] fits in B-bit two's complement."""
+    """R3: smallest B such that every atom's [emin, emax] fits in B-bit two's complement [NC10]."""
     B = 2
     for a in atoms:
         lo, hi = a.bounds()
@@ -182,6 +198,7 @@ def _register_width(atoms: Sequence[AtomSpec]) -> int:
 
 
 def make_layout(spec: SystemSpec) -> Layout:
+    """R1-R3, R5, R6: assign qubit indices (search, expression, temp, carry, flags, phase)."""
     n, m = spec.n, len(spec.atoms)
     B = _register_width(spec.atoms)
     e = list(range(n, n + B))
@@ -202,7 +219,8 @@ def _uma(x: int, y: int, z: int) -> List[Op]:
 
 
 def cdkm_adder(a: List[int], b: List[int], c0: int) -> List[Op]:
-    """b <- (a + b) mod 2^len(b); a and c0 restored.  Cuccaro et al. 2004 ripple-carry."""
+    """R4: b <- (a + b) mod 2^len(b); a and c0 restored.  MAJ/UMA ripple-carry adder [CDKM04]
+    (same family as the Vedral et al. adder [VBE96], with one carry ancilla)."""
     n = len(b)
     ops: List[Op] = []
     chain = [c0] + a[:-1]
@@ -214,7 +232,7 @@ def cdkm_adder(a: List[int], b: List[int], c0: int) -> List[Op]:
 
 
 def compute_expression(atom: AtomSpec, L: Layout) -> List[Op]:
-    """Load a0, then e += a_i * y_i for every term  (all gates self-inverse)."""
+    """R3 + R4: load a0, then e += a_i * y_i for every term  (all gates self-inverse)."""
     mod = 1 << L.B
     ops: List[Op] = []
     for j, q in enumerate(L.e):
@@ -228,7 +246,7 @@ def compute_expression(atom: AtomSpec, L: Layout) -> List[Op]:
 
 
 def comparator(atom: AtomSpec, L: Layout, flag: int) -> List[Op]:
-    """flag ^= [e <= 0]  (sign bit XOR zero; mutually exclusive) or [e == 0]."""
+    """R5: flag ^= [e <= 0]  (sign bit XOR zero; mutually exclusive) or [e == 0]  [NC10]."""
     ops: List[Op] = []
     if atom.kind == "LE":
         ops.append(("X", flag, (L.e[-1],)))
@@ -239,11 +257,13 @@ def comparator(atom: AtomSpec, L: Layout, flag: int) -> List[Op]:
 
 
 def atom_flag_block(atom: AtomSpec, L: Layout, flag: int) -> List[Op]:
+    """R3-R5, R7: compute e, set the flag, uncompute e (the block is its own mirror image) [Ben73]."""
     comp = compute_expression(atom, L)
     return comp + comparator(atom, L, flag) + list(reversed(comp))   # self-inverse
 
 
 def build_oracle_ops(spec: SystemSpec, L: Layout) -> List[Op]:
+    """R6 + R7: flag blocks, MCX of all flags onto the |-> phase qubit [BBC+95][CEMM98], blocks reversed [Ben73]."""
     blocks = [atom_flag_block(a, L, f) for a, f in zip(spec.atoms, L.flags)]
     mark = [("X", L.phase, tuple(L.flags))]
     ops: List[Op] = []
@@ -256,6 +276,7 @@ def build_oracle_ops(spec: SystemSpec, L: Layout) -> List[Op]:
 
 
 def build_diffuser_ops(n: int) -> List[Op]:
+    """R8: inversion about the mean, H X (multi-controlled Z) X H on the search register [Gro96]."""
     S = list(range(n))
     ops: List[Op] = [("H", q, ()) for q in S] + [("X", q, ()) for q in S]
     ops.append(("Z", S[-1], tuple(S[:-1])))
@@ -264,6 +285,7 @@ def build_diffuser_ops(n: int) -> List[Op]:
 
 
 def default_iterations(n: int, solutions: int = 1) -> int:
+    """R9: optimal number of Grover rounds floor(pi / (4 asin(sqrt(M/N)))), N = 2^n [Gro96][BBHT98]."""
     N = 1 << n
     if solutions <= 0 or solutions >= N:
         return 0
@@ -271,7 +293,7 @@ def default_iterations(n: int, solutions: int = 1) -> int:
 
 
 # --------------------------------------------------------------------------- #
-# BESSER emission
+# BESSER emission   [R1, R2, R9, R10]
 # --------------------------------------------------------------------------- #
 
 def _emit(circ: QuantumCircuit, op: Op) -> None:
@@ -294,24 +316,24 @@ def build_circuit_from_spec(spec: SystemSpec, name: str = "KnapsackGrover") -> T
     if not spec.atoms:
         raise ValueError("ConstraintSystem has no atoms")
     L = make_layout(spec)
-    R = spec.iterations if spec.iterations is not None else default_iterations(L.n)
+    R = spec.iterations if spec.iterations is not None else default_iterations(L.n)   # R9
 
     circ = QuantumCircuit(name, L.total)
     circ.add_creg(ClassicalRegister("c", L.n))
 
-    # phase qubit -> |->
+    # R6: phase qubit -> |->
     _emit(circ, ("X", L.phase, ()))
     _emit(circ, ("H", L.phase, ()))
-    # uniform superposition on search register
+    # R2: uniform superposition on search register [Gro96]
     for q in range(L.n):
         _emit(circ, ("H", q, ()))
     oracle, diffuser = build_oracle_ops(spec, L), build_diffuser_ops(L.n)
-    for _ in range(R):
+    for _ in range(R):                       # R9: R rounds of oracle + diffuser
         for op in oracle:
             _emit(circ, op)
         for op in diffuser:
             _emit(circ, op)
-    for q in range(L.n):
+    for q in range(L.n):                     # R10: measure the search register
         circ.add_operation(Measurement(q, output_bit=q))
     return circ, L
 
@@ -324,7 +346,7 @@ def t2(constraint_system: Any, iterations: Optional[int] = None,
 
 
 # --------------------------------------------------------------------------- #
-# Classical decoding
+# Classical decoding   [R10]
 # --------------------------------------------------------------------------- #
 
 def decode_bitstring(bitstring: str, layout_or_spec: Any) -> Dict[str, int]:
@@ -387,7 +409,7 @@ def _self_check(names=None, max_aer_qubits: int = 20) -> None:
         msg = f"{name:8s} n={L.n} qubits={L.total} B={L.B} solutions={len(truth)} oracle OK"
         if L.total <= max_aer_qubits and 0 < len(truth) < (1 << L.n):
             circ, L = build_circuit_from_spec(spec)
-            d = os.path.join("out", "t3", name)
+            d = os.path.join("out", "t3", name)                 # R11: keep the generated Qiskit script
             os.makedirs(d, exist_ok=True)
             QiskitGenerator(circ, output_dir=d, shots=spec.shots).generate()
             env = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8")   # Windows: qc.draw() is non-ASCII
