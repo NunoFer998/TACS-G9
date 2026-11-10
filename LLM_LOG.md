@@ -1,3 +1,13 @@
+## 2026-11-10 - Review: Explicit solver configuration models
+
+- Tool: GitHub Copilot in VS Code.
+- Request: Review explicit modeling of solver choices replacing hard-coded configurations in T1/T2.
+- Output: Validated required configuration-model inputs in T1: explicit Grover rounds, 
+	shots, adder, signed expression encoding, and register width; confirmed clear separation between instance configurations and problem data; verified that T2 consumes settings directly without relying on defaults or round overrides, correctly rejecting register widths that would lead to overflow; approved keeping single-bit item unknowns (appropriate for 0/1 knapsack).
+- Verification: **Configuration regression tests:** Passed; **baseline & Oracle checks:** 	
+	T1 baseline checks and T2 oracle checks passed across all 6 instances; **full demonstration:** Successful end-to-end run via generated Qiskit/Aer for the 5 instances under 20 qubits. Modeled rounds matched the baseline in every case; **simulation exception:** The 25-qubit f7_sub5 instance oracle was verified classically, omitting Aer simulation.
+- Scope: AI-assisted implementation review and documentation for group review.
+
 ## 2026-10-20 - Hand-built example object models
 
 - Tool: GitHub Copilot in VS Code.

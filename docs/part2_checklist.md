@@ -9,7 +9,7 @@ Last updated: 9 Nov (state of `main` at fbc4574, demo checked).
 - [x] T1: every rule (R1–R6) cites its reference in a comment
 - [ ] T2: every rule cites its reference in a comment (today only CDKM04/Cuccaro in the header)
 - [ ] Every rule cites its reference in the report
-- [ ] Solver config modelled explicitly: `SolverConfig` exists, but `iterations` is always 1 (T1 default). Grover rounds must come from `grover_rounds(n, M)` of the baseline. The T2 self-check hides this by computing rounds itself; the plain chain gives ~47% on f4 instead of ~96%
+- [x] Solver config modelled explicitly: mandatory model input with rounds, shots, adder, signed encoding and expression width. Instance configs are selected against the baseline; T1/T2/demo/self-check use the same settings, without hidden defaults or round overrides.
 - [x] Decoding of measured bitstrings → items, from the T2 layout (`decode_bitstring` / `decode_items`)
 - [ ] Bonus: map solutions back to the problem DSL
 
@@ -28,7 +28,7 @@ Last updated: 9 Nov (state of `main` at fbc4574, demo checked).
 - [x] Quantum result vs baseline for each instance, written down (`python -m demo` → `out/validation.md`; top result is a brute-force solution on toy, tiny, f4, f4_multi). Still to copy into the report
 - [x] Metric for class C: oracle calls + success probability of Grover, measured vs theoretical (in `out/validation.md`)
 - [x] f4_none run on Aer (demo: 0/1024 valid, "no solution")
-- [x] Validation catches typical LLM errors: oracle marks and dirty ancillas (T2 check) and wrong number of rounds (`(!)` in the demo table). Rounds are still wrong in the chain itself, see 7.1
+- [x] Validation catches typical LLM errors: oracle marks and dirty ancillas (T2 check), wrong number of rounds (`(!)` in the demo table), invalid config and undersized signed widths (`python -m unittest validation.test_solver_config`).
 
 ## 7.4 Deliverables
 - [x] T1 and T2 implemented
