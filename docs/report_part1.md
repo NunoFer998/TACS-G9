@@ -29,7 +29,7 @@ All atoms were standardized to zero-comparisons to simplify the transformation i
 
 Carrying **bitWidth** explicitly on the ``Unknown`` concept allows Transformation **T2** to directly calculate quantum register allocations in Qiskit without re-parsing variable bounds.
 
-Algorithmic execution parameters like `AdderKind`, `iterations` and  `shots` are isolated to keep the mathematical problem definition decoupled from backend execution choices. `iterations` and `shots` are the knobs of the Grover search [Gro96, BBHT98] that T2/T3 will build on top of the constraint system.
+Algorithmic execution parameters like `AdderKind`, `iterations` and  `shots` are isolated to keep the mathematical problem definition decoupled from backend execution choices. `iterations` and `shots` are the knobs of the Grover search [Gro96, BBHT98] that T2/T3 will build on top of the constraint system. In Part II, the required configuration model also explicitly carries the shared expression-register bit width and two's-complement encoding; transformations validate and consume these values rather than choosing defaults.
 
 ### Metamodel:
 

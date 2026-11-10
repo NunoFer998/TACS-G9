@@ -34,7 +34,7 @@ The **In metamodel** column says what each concept becomes in the metamodel.
 
 | Concept | Description | Attributes | Connections | In metamodel | Reference |
 |---|---|---|---|---|---|
-| Constraint System | A system of linear integer constraints over bounded unknowns. | name: String | contains 1..* Unknown, 1 root Formula, | **class** `ConstraintSystem` | Annex A class C ("Instance") |
+| Constraint System | A system of linear integer constraints over bounded unknowns. | name: String | contains 1..* Unknown, 1 root Formula, 1 Solver Config | **class** `ConstraintSystem` | Annex A class C ("Instance") |
 | Unknown | Integer variable yᵢ; with w bits it takes the values 0 … 2ʷ − 1. | name: String (unique); bitWidth: Integer (≥ 1) | used by 0..* Term | **class** `Unknown` | Annex A class C |
 | Formula | Something that is true or false for a choice of the unknowns. | — | root of 1 Constraint System, or operand of 1 And/Or | **abstract class** `Formula` | Annex A class C (∧, ∨) |
 | Atom | Compares one linear expression with zero. | relation: Relation | is a Formula; contains 1 Linear Expression | **class** `Atom` | Annex A class C |
@@ -42,9 +42,10 @@ The **In metamodel** column says what each concept becomes in the metamodel.
 | And / Or | True when all / at least one of the operands is true. | — | is a Formula; contains 2..* Formula | **classes** `And`, `Or` under abstract `Junction` | Annex A class C |
 | Linear Expression | a₀ + a₁y₁ + … + aₙyₙ. | constant: Integer (a₀) | contains 0..* Term; belongs to 1 Atom | **class** `LinearExpression` | Annex A class C |
 | Term | One coefficient times one unknown, aᵢ·yᵢ. | coefficient: Integer (≠ 0) | refers to 1 Unknown | **class** `Term` | Annex A class C |
-| Solver Config | How the search runs; kept out of the transformations. | iterations: Integer (≥ 0); shots: Integer (≥ 1); adder: AdderKind | belongs to 1 Constraint System | **class** `SolverConfig` | Annex B [Gro96, BBHT98] |
+| Solver Config | Explicit model input describing how the search runs. | iterations: Integer (≥ 0); shots: Integer (≥ 1); adder: AdderKind; expressionBitWidth: Integer (≥ 1); expressionEncoding: ExpressionEncoding | standalone input or owned by 1 Constraint System | **class** `SolverConfig` | Annex B [Gro96, BBHT98] |
 | Adder Kind | Which reversible adder T2 builds. | RIPPLE_CARRY, QFT | used by Solver Config | **enum** `AdderKind` | [VBE96, CDKM04]; [Dra00] |
-| Expression Register | Two's-complement register of B bits that holds an expression's value in the oracle. | B: Integer (derived from the expression's min/max) | one per Linear Expression | **derived** (computed by T2, not stored) | Annex A class C (implementation notes); [NC10] |
+| Expression Encoding | Signed arithmetic representation. | TWOS_COMPLEMENT | used by Solver Config | **enum** `ExpressionEncoding` | [NC10] |
+| Expression Register | Register of B bits that holds an expression's value in the oracle. | B = SolverConfig.expressionBitWidth | shared by all atoms; temp register has the same width | **configured** (T2 validates expression min/max fit, never resizes) | Annex A class C (implementation notes); [NC10] |
 
 
 ### OCL constraints (solution DSL)
@@ -58,6 +59,9 @@ The **In metamodel** column says what each concept becomes in the metamodel.
 | LinearExpression | oneTermPerUnknown | `self.terms->forAll(t1, t2 \| t1 <> t2 implies t1.unknown <> t2.unknown)` | each unknown appears at most once per expression |
 | Formula | singleParent | `self.rootOf->size() + self.parent->size() = 1` | the formulas form a tree with one root |
 | Junction | noSelfOperand | `self.operands->excludes(self)` | no formula contains itself |
+| SolverConfig | iterationsNonNegative | `self.iterations >= 0` | zero rounds are valid |
+| SolverConfig | shotsPositive | `self.shots >= 1` | at least one shot |
+| SolverConfig | expressionBitWidthPositive | `self.expressionBitWidth >= 1` | nonempty signed register |
 
 ## 3. Mapping problem → solution (seed of T1)
 
@@ -74,6 +78,7 @@ The **In metamodel** column says what each concept becomes in the metamodel.
 | Value Constraint | Atom LE: V − Σ vᵢyᵢ ≤ 0 | same as above |
 | Item.name | Unknown.name (e.g. y_a), used to decode the answer | traceability choice |
 | Selection | (not mapped: read back from the measured bits of yᵢ in Part II) | — |
+| Solver configuration model | Copy of SolverConfig, preserving rounds, shots, adder, expression width and encoding | assignment section 2 |
 
 ## 4. Mapping solution → quantum circuit (seed of T2)
 
@@ -84,7 +89,7 @@ never emits placeholders for high-level arithmetic or comparison gates.
 |---|---|---|
 | Constraint System | 1 `QuantumCircuit`: one quantum register `q`, one classical register `c` with n bits | Annex A class C |
 | Unknown yₖ (w bits) | w search qubits (LSB first), each put in superposition with H; bits are read back by `Unknown.name` | [Gro96]; traceability choice |
-| Linear Expression | Expression Register of B bits (smallest B whose two's-complement range holds the expression's min and max), temp register of B qubits, 1 carry ancilla; shared by all atoms | [NC10]; Annex A class C (implementation notes) |
+| Linear Expression | Expression register of configured B bits (validated against every atom's min/max), temp register of B qubits, 1 carry ancilla; shared by all atoms | [NC10]; Annex A class C (implementation notes) |
 | constant a₀ | X gates that load a₀ mod 2ᴮ into the expression register | [NC10] |
 | Term aᵢ·yᵢ | yᵢ-controlled addition of aᵢ mod 2ᴮ: CX yᵢ → temp bits, adder, CX again (controlled load / unload) | [CDKM04]; [VBE96] |
 | Adder Kind = RIPPLE_CARRY | MAJ/UMA ripple-carry adder with one carry ancilla (Adder Kind = QFT: not implemented) | [CDKM04]; [Dra00] |
@@ -94,7 +99,7 @@ never emits placeholders for high-level arithmetic or comparison gates.
 | Or | not supported by T2 (T1 never creates it) | — |
 | (compute, mark, uncompute) | the flag blocks are run backwards after marking, so expression, temp, carry and flag qubits return to \|0⟩ | [Ben73] |
 | (diffuser) | H, X, multi-controlled Z, X, H on the search register | [Gro96] |
-| Solver Config.iterations | R repetitions of oracle + diffuser (default ⌊π / (4 asin √(M/N))⌋ for M solutions, N = 2ⁿ) | [Gro96]; [BBHT98]; Annex B |
+| Solver Config.iterations | Exactly R repetitions of oracle + diffuser, including R = 0; no transformation default or override | [Gro96]; [BBHT98]; Annex B |
 | Solver Config.shots, backend | shots of the Qiskit script generated in T3 (Aer simulator); the script is saved as `out/t3/<instance>/qiskit_circuit.py` | Annex B |
 | Selection | measurement of the n search qubits; `decode_bitstring` / `decode_items` map the bits to Unknowns and item names | Annex A class C; traceability choice |
 
@@ -123,4 +128,3 @@ Qubit layout (single register `q`, indices in order):
 - [Ben73] C. H. Bennett. "Logical reversibility of computation." IBM Journal of Research and Development, 1973.
 - [NC10] M. A. Nielsen, I. L. Chuang. *Quantum Computation and Quantum Information.* Cambridge University Press, 10th anniversary edition, 2010.
 - Assignment: "TACS 2627 Assignment, QMDE"
-

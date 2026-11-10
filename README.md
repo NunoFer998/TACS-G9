@@ -37,7 +37,7 @@ From the repo root, with the venv active:
 ```bash
 python -m transformations.t1                 # T1 on every instance in models/instances.py + check; saves out/t1/<instance>_solution.py
 python -m transformations.t1 f4 f4_multi     # only some instances
-python -m transformations.t1 problem_dsl/problem_objectmodel.py   # an editor-exported model; saves out/t1/<name>_solution.py
+python -m transformations.t1 problem.py solver_config.py   # editor exports, each defining object_model
 ```
 
 The check reads the T1 output back (all 0/1 assignments satisfying every `e <= 0` atom) and compares it with the
@@ -57,7 +57,7 @@ The check builds the circuit with T2 and compares it with the T1 solution model 
 brute-force baseline): the oracle (simulated classically on all 2^n inputs) must mark exactly the solutions and leave every
 ancilla at `0`; then, for instances with some but not all assignments as solutions and at most 20 qubits, the generated Qiskit
 script is run on Aer and more than 70% of the shots must decode to a valid assignment. Expected output: `oracle OK` on every
-line, plus `Aer <valid>/<shots> valid` (about 96-97%) on the simulated ones (`toy`, `tiny`, `f4`, `f4_multi`);
+line, plus `Aer <valid>/<shots> valid` (about 94-97%) on the simulated ones (`toy`, `tiny`, `f4`, `f4_multi`);
 `f4_none` (no solution) and `f7_sub5` (25 qubits) only get the oracle check. Any assertion error means T2 changed the problem's meaning.
  
 ```
@@ -65,8 +65,47 @@ toy      n=3 qubits=15 B=4 solutions=1 oracle OK | Aer 980/1024 valid, top=['a',
 f4_none  n=4 qubits=20 B=6 solutions=0 oracle OK
 ```
  
-T2 is in [`transformations/t2.py`](transformations/t2.py): `t2(solution_model, iterations=R)` returns the BESSER circuit and its
+T2 is in [`transformations/t2.py`](transformations/t2.py): `t2(solution_model)` returns the BESSER circuit and its
 qubit layout; `decode_items(bitstring, layout)` maps a measured bitstring back to item names.
+
+## Explicit solver configuration
+
+T1 takes two model inputs: `transform(problem_model, configuration_model)`.
+The configuration model contains exactly one `SolverConfig`, T1 copies it into
+the solution model with a trace link to the input object. Each constraint system
+must own one config. T1/T2 have no solver defaults or iteration overrides.
+
+[`models/solver_configs.py`](models/solver_configs.py) defines the configurations
+used by the CLI, demo and self-checks, separately from the problem instances:
+
+| Instance | Grover rounds | Expression bits |
+|---|---:|---:|
+| toy | 2 | 4 |
+| tiny | 3 | 5 |
+| f4 | 3 | 6 |
+| f4_multi | 1 | 6 |
+| f4_none | 0 | 6 |
+| f7_sub5 | 4 | 8 |
+
+Each also explicitly sets `shots=1024`, `adder=RIPPLE_CARRY` and
+`expressionEncoding=TWOS_COMPLEMENT`. Rounds were selected from the classical
+baseline's solution counts, outside the transformations. Zero rounds are valid.
+`expressionBitWidth` controls both shared arithmetic registers; T2 rejects a
+width that cannot hold every atom's full signed range rather than widening it.
+QFT is modelled but explicitly rejected by T2 until implemented.
+Unknown widths remain explicit on `Unknown.bitWidth`: T1 sets them to 1 because
+this is **0/1** knapsack, not a configurable change to the problem's domain.
+
+For custom models, use `make_config` from
+[`models/solver_configs.py`](models/solver_configs.py), supplying every setting,
+or export an equivalent `SolverConfig` object model from the editor.
+[`docs/transformations.md`](docs/transformations.md) includes an executable example.
+
+Regression checks (no additional test dependencies):
+
+```bash
+python -m unittest validation.test_solver_config
+```
 
 ## Run the whole chain (demo)
 
@@ -97,6 +136,9 @@ Everything under `out/` is generated and git-ignored.
 
 ### Diagrams
 
+The PNG diagrams are Part I snapshots; the Python metamodel and editor JSON
+include the current mandatory solver config, expression width and encoding.
+
 **Problem DSL**
 
 ![Problem DSL class diagram](problem_dsl/problem_class-diagram.png)
@@ -117,7 +159,7 @@ Deadline: November 11 (assignment §7.4).
 | Test instances written in the problem DSL (≥3, incl. several and no solutions) | [`models/instances.py`](models/instances.py) | Done |
 | Working demo with a single documented command | [`demo.py`](demo.py) | Done (`python -m demo`) |
 | Classical baseline (brute force + DP): the correct answer for each instance | [`validation/baseline.py`](validation/baseline.py) | Done |
-| Validation: Aer simulation results vs. the classical baseline (success probability, oracle calls) | `out/validation.md` (written by `python -m demo`) | Done, except Grover rounds still come from the T1 default (see the `(!)` in the table) and `f7_sub5` (25 qubits) is not simulated |
+| Validation: Aer simulation results vs. the classical baseline (success probability, oracle calls) | `out/validation.md` (written by `python -m demo`) | Done; rounds come from explicit configuration models; `f7_sub5` (25 qubits) is not simulated |
 | Report (~2 pages) | [`docs/report_part2.md`](docs/report_part2.md) | In progress (instances + baseline written; transformations, validation, limitations to do) |
 | LLM usage log | [`LLM_LOG.md`](LLM_LOG.md) | To do |
 
