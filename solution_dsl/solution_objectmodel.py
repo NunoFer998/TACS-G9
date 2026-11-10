@@ -31,6 +31,11 @@ Relation: Enumeration = Enumeration(
     }
 )
 
+ExpressionEncoding = Enumeration(
+    name="ExpressionEncoding",
+    literals={EnumerationLiteral(name="TWOS_COMPLEMENT")},
+)
+
 # Classes
 And = Class(name="And")
 Atom = Class(name="Atom")
@@ -67,7 +72,10 @@ LinearExpression.attributes={LinearExpression_constant}
 SolverConfig_adder: Property = Property(name="adder", type=AdderKind)
 SolverConfig_iterations: Property = Property(name="iterations", type=IntegerType)
 SolverConfig_shots: Property = Property(name="shots", type=IntegerType)
-SolverConfig.attributes={SolverConfig_adder, SolverConfig_iterations, SolverConfig_shots}
+SolverConfig_expressionBitWidth: Property = Property(name="expressionBitWidth", type=IntegerType)
+SolverConfig_expressionEncoding: Property = Property(name="expressionEncoding", type=ExpressionEncoding)
+SolverConfig.attributes={SolverConfig_adder, SolverConfig_iterations, SolverConfig_shots,
+                         SolverConfig_expressionBitWidth, SolverConfig_expressionEncoding}
 
 # Term class attributes and methods
 Term_coefficient: Property = Property(name="coefficient", type=IntegerType)
@@ -103,8 +111,8 @@ junction_operands: BinaryAssociation = BinaryAssociation(
 system_config: BinaryAssociation = BinaryAssociation(
     name="system_config",
     ends={
-        Property(name="configOf", type=ConstraintSystem, multiplicity=Multiplicity(1, 1)),
-        Property(name="config", type=SolverConfig, multiplicity=Multiplicity(0, 1), is_composite=True)
+        Property(name="configOf", type=ConstraintSystem, multiplicity=Multiplicity(0, 1)),
+        Property(name="config", type=SolverConfig, multiplicity=Multiplicity(1, 1), is_composite=True)
     }
 )
 root: BinaryAssociation = BinaryAssociation(
@@ -207,11 +215,17 @@ uniqueUnknownNames: Constraint = Constraint(
 )
 
 # Domain Model
+expressionBitWidthPositive = Constraint(
+    name="expressionBitWidthPositive", context=SolverConfig,
+    expression="context SolverConfig inv expressionBitWidthPositive: self.expressionBitWidth >= 1",
+    language="OCL",
+)
+
 domain_model = DomainModel(
     name="Class_Diagram",
-    types={And, Atom, ConstraintSystem, Formula, Junction, LinearExpression, Or, SolverConfig, Term, Unknown, AdderKind, Relation},
+    types={And, Atom, ConstraintSystem, Formula, Junction, LinearExpression, Or, SolverConfig, Term, Unknown, AdderKind, Relation, ExpressionEncoding},
     associations={atom_expression, expression_terms, junction_operands, system_config, root, system_unknowns, term_unknown, ConstraintSystem_And, And_Atom},
-    constraints={bitWidthPositive, coefficientNonZero, iterationsNonNegative, noSelfOperand, oneTermPerUnknown, searchSpaceSimulable, shotsPositive, singleParent, uniqueUnknownNames},
+    constraints={bitWidthPositive, coefficientNonZero, iterationsNonNegative, noSelfOperand, oneTermPerUnknown, searchSpaceSimulable, shotsPositive, singleParent, uniqueUnknownNames, expressionBitWidthPositive},
     generalizations={gen_And_Junction, gen_Atom_Formula, gen_Junction_Formula, gen_Or_Junction},
     metadata=None
 )
@@ -222,7 +236,10 @@ domain_model = DomainModel(
 and1_obj = And("and1").build()
 atomv_obj = Atom("atomV").attributes(relation=Relation.LE).build()
 atomw_obj = Atom("atomW").attributes(relation=Relation.LE).build()
-cfg_obj = SolverConfig("cfg").attributes(iterations=1, shots=1024, adder=AdderKind.RIPPLE_CARRY).build()
+cfg_obj = SolverConfig("cfg").attributes(
+    iterations=3, shots=1024, adder=AdderKind.RIPPLE_CARRY,
+    expressionBitWidth=6, expressionEncoding=ExpressionEncoding.TWOS_COMPLEMENT,
+).build()
 ev_obj = LinearExpression("eV").attributes(constant=23).build()
 ew_obj = LinearExpression("eW").attributes(constant=-11).build()
 s_obj = ConstraintSystem("s").attributes(name="kp_4_11").build()

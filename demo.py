@@ -13,7 +13,7 @@ For each instance (a problem DSL model):
   7. compare with the baseline and write out/validation.md
 
 The number of Grover rounds is read from the solution model (SolverConfig.iterations),
-never chosen here: if T1 does not set it from M, the table shows it.
+never chosen here. Input configuration models live in models/solver_configs.py.
 """
 import ast
 import os
@@ -24,6 +24,7 @@ from besser.generators.qiskit import QiskitGenerator
 from besser.utilities.buml_code_builder.quantum_model_builder import quantum_model_to_code
 
 from models.instances import INSTANCES
+from models.solver_configs import CONFIGS
 from transformations import t1, t2
 from validation.baseline import (read_problem, brute_force, grover_rounds,
                                  grover_success_probability)
@@ -54,9 +55,9 @@ def run_instance(name):
     best_rounds = grover_rounds(n, m)
 
     # 2-3. T1, T2
-    sol_model, _trace = t1.transform(model)
+    sol_model, _trace = t1.transform(model, CONFIGS[name])
     circ, layout = t2.t2(sol_model)
-    rounds = t2.extract_spec(sol_model).iterations or 0
+    rounds = t2.extract_spec(sol_model).iterations
     os.makedirs(f"{OUT}/t2", exist_ok=True)
     quantum_model_to_code(circ, f"{OUT}/t2/{name}.py")
 
