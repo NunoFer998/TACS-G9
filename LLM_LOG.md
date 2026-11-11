@@ -1,3 +1,29 @@
+## 2026-11-07 to 2026-11-10 - Setup fix, demo, validation 
+
+- Tool: Claude
+- Request: find why `python -m transformations.t2` failed with `TemplateNotFound`;
+	save the generated Qiskit code; write the single-command demo with the
+	validation table.
+- Input: the assignment (§7, Annex A), the repository (T1, T2, baseline,
+	instances) and the course BESSER fork.
+- Output: `requirements.txt` installs BESSER in editable mode (the fork's pip
+	package leaves out `besser/generators/qiskit/templates/`, which has no
+	`__init__.py`); T2 saves the generated script to `out/t3/<instance>/`;
+	[`demo.py`](demo.py) (baseline → T1 → T2 → generator → Aer → items →
+	`out/validation.md`); the Grover rounds computed from the baseline's M (later
+	moved into the explicit solver configuration models, see the next entry); drafts of the validation and limitations.
+- What was wrong and how we found it:
+	- The qubit estimate the LLM proposed for the test instances (11 to 20
+	  qubits) was too low: the real T2 circuits have 4 to 5 more qubits (adder
+	  temporary register, carry, flags, phase). Found by comparing with the
+	  qubit counts printed by T2; the report table now shows both.
+	- T1 kept the Grover rounds at 1, and T2's self-check hid it because it
+	  computed its own rounds. Running the chain without the self-check gave 46%
+	  on f4 instead of 96%. The demo now flags any difference between the rounds
+	  in the model and the optimum.
+	- T2 turned 0 rounds into a default of 3 (f4_none). Found by checking the
+	  size of the generated circuit (10 operations expected).
+
 ## 2026-11-10 - Review: Explicit solver configuration models
 
 - Tool: GitHub Copilot in VS Code.

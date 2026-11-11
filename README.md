@@ -116,8 +116,10 @@ python -m demo f4 f4_multi     # only some instances
 
 For each instance: classical baseline → T1 → T2 → Qiskit code (BESSER generator) → Aer (up to 20 qubits) → measured
 bitstrings decoded to item names → comparison with the baseline. It prints a table and writes `out/validation.md`
-(success probability measured vs. theory, oracle calls, most frequent answer). A `(!)` in the Rounds column means the
-Grover rounds in the solution model differ from the optimum computed from the baseline's M.
+(success probability measured vs. theory, oracle calls, most frequent answer). The number of Grover rounds comes
+from each instance's solver configuration model (`models/solver_configs.py`), checked against the baseline's M by
+`validation/test_solver_config.py`; a `(!)` in the Rounds column would mean the rounds
+stored in the solution model differ from that optimum.
 Everything under `out/` is generated and git-ignored.
 
 ## Part I deliverables
@@ -159,9 +161,9 @@ Deadline: November 11 (assignment §7.4).
 | Test instances written in the problem DSL (≥3, incl. several and no solutions) | [`models/instances.py`](models/instances.py) | Done |
 | Working demo with a single documented command | [`demo.py`](demo.py) | Done (`python -m demo`) |
 | Classical baseline (brute force + DP): the correct answer for each instance | [`validation/baseline.py`](validation/baseline.py) | Done |
-| Validation: Aer simulation results vs. the classical baseline (success probability, oracle calls) | `out/validation.md` (written by `python -m demo`) | Done; rounds come from explicit configuration models; `f7_sub5` (25 qubits) is not simulated |
-| Report (~2 pages) | [`docs/report_part2.md`](docs/report_part2.md) | In progress (instances + baseline written; transformations, validation, limitations to do) |
-| LLM usage log | [`LLM_LOG.md`](LLM_LOG.md) | To do |
+| Validation: Aer simulation results vs. the classical baseline (success probability, oracle calls) | `out/validation.md` (written by `python -m demo`) | Done: measured within about 1 point of theory on every simulated instance; `f7_sub5` (25 qubits) is oracle-checked only |
+| Report (~2 pages) | [`docs/report_part2.md`](docs/report_part2.md) | In progress (instances, baseline, validation, limitations written; transformations to do) |
+| LLM usage log | [`LLM_LOG.md`](LLM_LOG.md) | In progress (Part II entries being added by each member) |
 
 ## Structure
 
