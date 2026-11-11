@@ -40,7 +40,35 @@ We also use M to set the number of Grover rounds, `floor(π/4 · √(2^n / M))` 
 
 ## Transformations
 
-[T1, T2 — later.]
+Both transformations are plain Python functions over BESSER models, one function per rule, and each rule cites its reference in the code comment next to it (`transformations/t1.py`, `transformations/t2.py`). The full concept mapping is in `docs/concept_list.md`.
+
+**T1: problem model → solution model** (`transformations/t1.py`). The input is a `KnapsackProblem` with its items and the solver configuration model; the output is a `ConstraintSystem` of linear integer constraints, plus a trace `{created object: source object}` that a backward mapping could use.
+
+| Rule | Problem DSL | Solution DSL | Reference |
+|---|---|---|---|
+| R1 | `KnapsackProblem` | `ConstraintSystem` | Annex A, class C |
+| R2 | `Item` | `Unknown` y_i of 1 bit (1 = packed) | [GJ79] MP9 |
+| R3 | capacity C | `Atom` Σ w_i·y_i − C ≤ 0 | [KPP04]; Annex A |
+| R4 | minimum value V | `Atom` V − Σ v_i·y_i ≤ 0 | Annex A (variants) |
+| R5 | feasibility question | root `And` of the two atoms | [GJ79] MP9 |
+| R6 | solver configuration | `SolverConfig`, copied from the input and never defaulted | assignment §2 |
+
+**T2: solution model → quantum model** (`transformations/t2.py`). The output is a BESSER `QuantumCircuit` that implements Grover search with a compute–mark–uncompute oracle.
+
+| Rule | Solution DSL | Quantum model | Reference |
+|---|---|---|---|
+| R1 | `ConstraintSystem` | `QuantumCircuit` with one register and n classical bits | Annex A |
+| R2 | `Unknown` | search qubits, put in superposition with H | [Gro96] |
+| R3 | `LinearExpression` a0 + Σ a_i·y_i | expression register of B bits, two's complement, a0 loaded with X | [NC10]; Annex A |
+| R4 | `Term` a_i·y_i | addition of a_i controlled by y_i, with a ripple-carry adder | [CDKM04]; [VBE96]; [Dra00] |
+| R5 | `Atom` (≤ or =) | comparator that sets one flag qubit per atom | [NC10]; Annex A |
+| R6 | root `And` | multi-controlled X from all flags onto the phase qubit in \|−⟩ | [BBC+95]; [CEMM98] |
+| R7 | oracle | compute, mark, then run the compute blocks backwards | [Ben73] |
+| R8 | search register | diffuser H X (multi-controlled Z) X H | [Gro96] |
+| R9 | `SolverConfig.iterations` | number of rounds (zero allowed); shots go to T3 | [Gro96]; [BBHT98] |
+| R10 | `Unknown` names | measurement of the search qubits, and decoding of the counts back to item names | traceability choice |
+
+Three design decisions are worth stating. First, the solver choices (rounds, shots, adder, register width, encoding) are read from the configuration model, so neither transformation hard-codes them. Second, the oracle uses only primitive BESSER gates (X, H, Z with controls): BESSER's Qiskit generator turns `ComparisonGate` into an empty placeholder and `ArithmeticGate` into a Draper adder without constants, which would give a circuit that runs but is wrong, so we build the adder and the comparator ourselves. Third, the decoding is derived from the T2 qubit layout and not written by hand for each instance. T3 is not ours: it is BESSER's `QiskitGenerator`, and its output is never edited.
 
 ## Validation results
 
@@ -78,6 +106,13 @@ T2 also checks the oracle classically on all 2^n inputs, making sure it marks ex
 
 - [CDKM04] S. A. Cuccaro, T. G. Draper, S. A. Kutin, D. P. Moulton. "A new quantum ripple-carry addition circuit", arXiv:quant-ph/0410184, 2004.
 - [Dra00] T. G. Draper. "Addition on a quantum computer", arXiv:quant-ph/0008033, 2000.
+- [GJ79] M. R. Garey, D. S. Johnson. Computers and Intractability: A Guide to the Theory of NP-Completeness. W. H. Freeman, 1979 (problem MP9, Knapsack).
+- [Gro96] L. Grover. "A fast quantum mechanical algorithm for database search", STOC, 1996.
+- [VBE96] V. Vedral, A. Barenco, A. Ekert. "Quantum networks for elementary arithmetic operations", Physical Review A, 1996.
+- [BBC+95] A. Barenco et al. "Elementary gates for quantum computation", Physical Review A, 1995.
+- [CEMM98] R. Cleve, A. Ekert, C. Macchiavello, M. Mosca. "Quantum algorithms revisited", Proceedings of the Royal Society A, 1998.
+- [Ben73] C. H. Bennett. "Logical reversibility of computation", IBM Journal of Research and Development, 1973.
+- [NC10] M. A. Nielsen, I. L. Chuang. Quantum Computation and Quantum Information, 10th anniversary ed. Cambridge University Press, 2010.
 - [KPP04] H. Kellerer, U. Pferschy, D. Pisinger. Knapsack Problems. Springer, 2004.
 - [BBHT98] M. Boyer, G. Brassard, P. Høyer, A. Tapp. “Tight bounds on quantum searching”, Fortschritte der Physik, 1998.
 - [Pis] D. Pisinger, low-dimensional 0/1 knapsack instances, as collected in https://github.com/dnlfm/knapsack-01-instances/tree/main/pisinger_instances_01_KP/low-dimensional
