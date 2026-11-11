@@ -346,12 +346,14 @@
                   "x": -600,
                   "y": 300,
                   "width": 160,
-                  "height": 130
+                  "height": 190
                 },
                 "attributes": [
                   "ba05fbec-1f22-49b4-856c-fa7ddec4df24",
                   "b437708e-67e1-4c3a-8716-c37751b63e08",
-                  "b260e2f0-d2e9-4dd0-a190-9d240c4644e9"
+                  "b260e2f0-d2e9-4dd0-a190-9d240c4644e9",
+                  "9a4e4c3b-6837-5d1c-bbd7-9c9e82ad30de",
+                  "20dfec67-60eb-5dba-90b8-6bd9bb97f056"
                 ],
                 "methods": []
               },
@@ -651,6 +653,105 @@
                 },
                 "description": "",
                 "constraint": "context ConstraintSystem inv uniqueUnknownNames: self.unknowns->forAll(u1, u2 | u1 <> u2 implies u1.name <> u2.name)"
+              },
+              "9a4e4c3b-6837-5d1c-bbd7-9c9e82ad30de": {
+                "id": "9a4e4c3b-6837-5d1c-bbd7-9c9e82ad30de",
+                "name": "expressionBitWidth",
+                "type": "ClassAttribute",
+                "owner": "bd9f126f-e14a-4193-a015-c82214edf9ee",
+                "bounds": {
+                  "x": -599.5,
+                  "y": 430.5,
+                  "width": 159,
+                  "height": 30
+                },
+                "code": "",
+                "visibility": "public",
+                "attributeType": "int",
+                "implementationType": "none",
+                "stateMachineId": "",
+                "quantumCircuitId": "",
+                "neuralNetworkId": "",
+                "isOptional": false,
+                "isDerived": false,
+                "isId": false,
+                "isExternalId": false
+              },
+              "20dfec67-60eb-5dba-90b8-6bd9bb97f056": {
+                "id": "20dfec67-60eb-5dba-90b8-6bd9bb97f056",
+                "name": "expressionEncoding",
+                "type": "ClassAttribute",
+                "owner": "bd9f126f-e14a-4193-a015-c82214edf9ee",
+                "bounds": {
+                  "x": -599.5,
+                  "y": 460.5,
+                  "width": 159,
+                  "height": 30
+                },
+                "code": "",
+                "visibility": "public",
+                "attributeType": "ExpressionEncoding",
+                "implementationType": "none",
+                "stateMachineId": "",
+                "quantumCircuitId": "",
+                "neuralNetworkId": "",
+                "isOptional": false,
+                "isDerived": false,
+                "isId": false,
+                "isExternalId": false
+              },
+              "db5d33bc-8da1-59a2-bd09-edf83d850598": {
+                "id": "db5d33bc-8da1-59a2-bd09-edf83d850598",
+                "name": "ExpressionEncoding",
+                "type": "Enumeration",
+                "owner": null,
+                "bounds": {
+                  "x": -850,
+                  "y": 300,
+                  "width": 220,
+                  "height": 80
+                },
+                "attributes": [
+                  "704b1e9b-3ecd-507c-b0a4-30043d23f0ea"
+                ],
+                "methods": []
+              },
+              "704b1e9b-3ecd-507c-b0a4-30043d23f0ea": {
+                "id": "704b1e9b-3ecd-507c-b0a4-30043d23f0ea",
+                "name": "TWOS_COMPLEMENT",
+                "type": "ClassAttribute",
+                "owner": "db5d33bc-8da1-59a2-bd09-edf83d850598",
+                "bounds": {
+                  "x": -849.5,
+                  "y": 350.5,
+                  "width": 219,
+                  "height": 30
+                },
+                "code": "",
+                "visibility": "public",
+                "attributeType": "str",
+                "implementationType": "none",
+                "stateMachineId": "",
+                "quantumCircuitId": "",
+                "neuralNetworkId": "",
+                "isOptional": false,
+                "isDerived": false,
+                "isId": false,
+                "isExternalId": false
+              },
+              "7e45dc42-59b9-5606-bd88-044098b0a3d5": {
+                "id": "7e45dc42-59b9-5606-bd88-044098b0a3d5",
+                "name": "expressionBitWidthPositive",
+                "type": "ClassOCLConstraint",
+                "owner": null,
+                "bounds": {
+                  "x": -850,
+                  "y": 900,
+                  "width": 220,
+                  "height": 100
+                },
+                "description": "",
+                "constraint": "context SolverConfig inv expressionBitWidthPositive: self.expressionBitWidth >= 1"
               }
             },
             "relationships": {
@@ -841,7 +942,7 @@
                 "source": {
                   "direction": "Down",
                   "element": "ab34cbed-0e3c-43b7-b8cd-2ca90af823ee",
-                  "multiplicity": "1",
+                  "multiplicity": "0..1",
                   "role": "configOf",
                   "navigable": true,
                   "bounds": {
@@ -854,7 +955,7 @@
                 "target": {
                   "direction": "Up",
                   "element": "bd9f126f-e14a-4193-a015-c82214edf9ee",
-                  "multiplicity": "0..1",
+                  "multiplicity": "1",
                   "role": "config",
                   "navigable": true,
                   "bounds": {
@@ -1821,26 +1922,28 @@
                 "bounds": {
                   "x": -430,
                   "y": -530,
-                  "width": 200,
-                  "height": 130
+                  "width": 360,
+                  "height": 190
                 },
                 "attributes": [
                   "00c2030b-b695-4779-a2cf-08e27fa98fa7",
                   "28458a55-3688-408e-b859-85efcf89533d",
-                  "c7e8c42c-b728-49f9-86eb-2fa539bc52f6"
+                  "c7e8c42c-b728-49f9-86eb-2fa539bc52f6",
+                  "6358ebe1-0ab5-5ce5-b053-f055c9b24f93",
+                  "eab9119b-d6a2-55b7-8653-6a72af42fca2"
                 ],
                 "methods": [],
                 "classId": "bd9f126f-e14a-4193-a015-c82214edf9ee"
               },
               "00c2030b-b695-4779-a2cf-08e27fa98fa7": {
                 "id": "00c2030b-b695-4779-a2cf-08e27fa98fa7",
-                "name": "iterations = 1",
+                "name": "iterations = 3",
                 "type": "ObjectAttribute",
                 "owner": "59401cad-32f2-4c52-8262-4be0a8663ae5",
                 "bounds": {
                   "x": -429.5,
                   "y": -489.5,
-                  "width": 199,
+                  "width": 359,
                   "height": 30
                 },
                 "code": "",
@@ -1864,7 +1967,7 @@
                 "bounds": {
                   "x": -429.5,
                   "y": -459.5,
-                  "width": 199,
+                  "width": 359,
                   "height": 30
                 },
                 "code": "",
@@ -1888,7 +1991,7 @@
                 "bounds": {
                   "x": -429.5,
                   "y": -429.5,
-                  "width": 199,
+                  "width": 359,
                   "height": 30
                 },
                 "code": "",
@@ -2618,6 +2721,54 @@
                 "isId": false,
                 "isExternalId": false,
                 "attributeId": "2e397a88-1c4a-459e-8f7f-f1eaa5a33d52"
+              },
+              "6358ebe1-0ab5-5ce5-b053-f055c9b24f93": {
+                "id": "6358ebe1-0ab5-5ce5-b053-f055c9b24f93",
+                "name": "expressionBitWidth = 6",
+                "type": "ObjectAttribute",
+                "owner": "59401cad-32f2-4c52-8262-4be0a8663ae5",
+                "bounds": {
+                  "x": -429.5,
+                  "y": -399.5,
+                  "width": 359,
+                  "height": 30
+                },
+                "code": "",
+                "visibility": "public",
+                "attributeType": "int",
+                "implementationType": "none",
+                "stateMachineId": "",
+                "quantumCircuitId": "",
+                "neuralNetworkId": "",
+                "isOptional": false,
+                "isDerived": false,
+                "isId": false,
+                "isExternalId": false,
+                "attributeId": "9a4e4c3b-6837-5d1c-bbd7-9c9e82ad30de"
+              },
+              "eab9119b-d6a2-55b7-8653-6a72af42fca2": {
+                "id": "eab9119b-d6a2-55b7-8653-6a72af42fca2",
+                "name": "expressionEncoding = TWOS_COMPLEMENT",
+                "type": "ObjectAttribute",
+                "owner": "59401cad-32f2-4c52-8262-4be0a8663ae5",
+                "bounds": {
+                  "x": -429.5,
+                  "y": -369.5,
+                  "width": 359,
+                  "height": 30
+                },
+                "code": "",
+                "visibility": "public",
+                "attributeType": "ExpressionEncoding",
+                "implementationType": "none",
+                "stateMachineId": "",
+                "quantumCircuitId": "",
+                "neuralNetworkId": "",
+                "isOptional": false,
+                "isDerived": false,
+                "isId": false,
+                "isExternalId": false,
+                "attributeId": "20dfec67-60eb-5dba-90b8-6bd9bb97f056"
               }
             },
             "relationships": {
@@ -3885,12 +4036,14 @@
                     "x": -600,
                     "y": 300,
                     "width": 160,
-                    "height": 130
+                    "height": 190
                   },
                   "attributes": [
                     "ba05fbec-1f22-49b4-856c-fa7ddec4df24",
                     "b437708e-67e1-4c3a-8716-c37751b63e08",
-                    "b260e2f0-d2e9-4dd0-a190-9d240c4644e9"
+                    "b260e2f0-d2e9-4dd0-a190-9d240c4644e9",
+                    "9a4e4c3b-6837-5d1c-bbd7-9c9e82ad30de",
+                    "20dfec67-60eb-5dba-90b8-6bd9bb97f056"
                   ],
                   "methods": []
                 },
@@ -4190,6 +4343,105 @@
                   },
                   "description": "",
                   "constraint": "context ConstraintSystem inv uniqueUnknownNames: self.unknowns->forAll(u1, u2 | u1 <> u2 implies u1.name <> u2.name)"
+                },
+                "9a4e4c3b-6837-5d1c-bbd7-9c9e82ad30de": {
+                  "id": "9a4e4c3b-6837-5d1c-bbd7-9c9e82ad30de",
+                  "name": "expressionBitWidth",
+                  "type": "ClassAttribute",
+                  "owner": "bd9f126f-e14a-4193-a015-c82214edf9ee",
+                  "bounds": {
+                    "x": -599.5,
+                    "y": 430.5,
+                    "width": 159,
+                    "height": 30
+                  },
+                  "code": "",
+                  "visibility": "public",
+                  "attributeType": "int",
+                  "implementationType": "none",
+                  "stateMachineId": "",
+                  "quantumCircuitId": "",
+                  "neuralNetworkId": "",
+                  "isOptional": false,
+                  "isDerived": false,
+                  "isId": false,
+                  "isExternalId": false
+                },
+                "20dfec67-60eb-5dba-90b8-6bd9bb97f056": {
+                  "id": "20dfec67-60eb-5dba-90b8-6bd9bb97f056",
+                  "name": "expressionEncoding",
+                  "type": "ClassAttribute",
+                  "owner": "bd9f126f-e14a-4193-a015-c82214edf9ee",
+                  "bounds": {
+                    "x": -599.5,
+                    "y": 460.5,
+                    "width": 159,
+                    "height": 30
+                  },
+                  "code": "",
+                  "visibility": "public",
+                  "attributeType": "ExpressionEncoding",
+                  "implementationType": "none",
+                  "stateMachineId": "",
+                  "quantumCircuitId": "",
+                  "neuralNetworkId": "",
+                  "isOptional": false,
+                  "isDerived": false,
+                  "isId": false,
+                  "isExternalId": false
+                },
+                "db5d33bc-8da1-59a2-bd09-edf83d850598": {
+                  "id": "db5d33bc-8da1-59a2-bd09-edf83d850598",
+                  "name": "ExpressionEncoding",
+                  "type": "Enumeration",
+                  "owner": null,
+                  "bounds": {
+                    "x": -850,
+                    "y": 300,
+                    "width": 220,
+                    "height": 80
+                  },
+                  "attributes": [
+                    "704b1e9b-3ecd-507c-b0a4-30043d23f0ea"
+                  ],
+                  "methods": []
+                },
+                "704b1e9b-3ecd-507c-b0a4-30043d23f0ea": {
+                  "id": "704b1e9b-3ecd-507c-b0a4-30043d23f0ea",
+                  "name": "TWOS_COMPLEMENT",
+                  "type": "ClassAttribute",
+                  "owner": "db5d33bc-8da1-59a2-bd09-edf83d850598",
+                  "bounds": {
+                    "x": -849.5,
+                    "y": 350.5,
+                    "width": 219,
+                    "height": 30
+                  },
+                  "code": "",
+                  "visibility": "public",
+                  "attributeType": "str",
+                  "implementationType": "none",
+                  "stateMachineId": "",
+                  "quantumCircuitId": "",
+                  "neuralNetworkId": "",
+                  "isOptional": false,
+                  "isDerived": false,
+                  "isId": false,
+                  "isExternalId": false
+                },
+                "7e45dc42-59b9-5606-bd88-044098b0a3d5": {
+                  "id": "7e45dc42-59b9-5606-bd88-044098b0a3d5",
+                  "name": "expressionBitWidthPositive",
+                  "type": "ClassOCLConstraint",
+                  "owner": null,
+                  "bounds": {
+                    "x": -850,
+                    "y": 900,
+                    "width": 220,
+                    "height": 100
+                  },
+                  "description": "",
+                  "constraint": "context SolverConfig inv expressionBitWidthPositive: self.expressionBitWidth >= 1"
                 }
               },
               "relationships": {
@@ -4380,7 +4632,7 @@
                   "source": {
                     "direction": "Down",
                     "element": "ab34cbed-0e3c-43b7-b8cd-2ca90af823ee",
-                    "multiplicity": "1",
+                    "multiplicity": "0..1",
                     "role": "configOf",
                     "navigable": true,
                     "bounds": {
@@ -4393,7 +4645,7 @@
                   "target": {
                     "direction": "Up",
                     "element": "bd9f126f-e14a-4193-a015-c82214edf9ee",
-                    "multiplicity": "0..1",
+                    "multiplicity": "1",
                     "role": "config",
                     "navigable": true,
                     "bounds": {

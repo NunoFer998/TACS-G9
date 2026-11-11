@@ -13,7 +13,7 @@ Rules (traceable to docs/concept_list.md section 4 and the references there):
   R6  root And -> multi-controlled X from all flags onto the phase qubit in |->  (Or: not supported) [BBC+95]; [CEMM98]
   R7  compute flags, mark, then run the compute blocks backwards (uncompute: all gates self-inverse)   [Ben73]
   R8  Grover diffuser H X (multi-controlled Z) X H on the search register                            [Gro96]
-  R9  SolverConfig.iterations -> number of rounds R (default floor(pi / (4 asin(sqrt(M/N)))));
+  R9  SolverConfig.iterations -> exact number of rounds R (including zero);
       shots / backend are used by T3                                                                 [Gro96]; [BBHT98]; Annex B
   R10 Measure the search qubits; decode_bitstring / decode_items map them back to Unknown.name
       and item names                                                                                 traceability choice
@@ -45,14 +45,14 @@ Qubit layout (indices in the single register "q")
 """
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 
 from besser.BUML.metamodel.quantum import (
     ClassicalRegister, ControlState, HadamardGate, Measurement, PauliXGate,
     PauliZGate, QuantumCircuit,
 )
+from solution_dsl.solver_config import SolverSettings, read_config
 
 # --------------------------------------------------------------------------- #
 # DSL-independent intermediate form
@@ -76,9 +76,19 @@ class SystemSpec:
     unknown_names: List[str]
     unknown_widths: List[int]
     atoms: List[AtomSpec]
-    iterations: Optional[int] = None
-    shots: int = 1024
-    adder: str = "RIPPLE_CARRY"
+    iterations: int
+    shots: int
+    adder: str
+    expression_bit_width: int
+    expression_encoding: str
+
+    def __post_init__(self):
+        SolverSettings(self.iterations, self.shots, self.adder,
+                       self.expression_bit_width, self.expression_encoding)
+        if not self.unknown_widths or len(self.unknown_names) != len(self.unknown_widths):
+            raise ValueError("Each unknown must have a name and a bit width")
+        if any(type(w) is not int or w < 1 for w in self.unknown_widths):
+            raise ValueError("Unknown bit widths must be positive integers")
 
     @property
     def n(self) -> int:
@@ -137,7 +147,7 @@ def _flatten_and(node) -> list:
     raise NotImplementedError(f"T2 supports only And / Atom formulas, got {cls}")
 
 
-def extract_spec(solution_model, iterations: Optional[int] = None) -> SystemSpec:
+def extract_spec(solution_model) -> SystemSpec:
     """Solution ObjectModel -> SystemSpec (plain data).
 
     Unknowns are ordered by their `name` slot, exactly like t1.solutions_of and the
@@ -146,7 +156,9 @@ def extract_spec(solution_model, iterations: Optional[int] = None) -> SystemSpec
     system = next(o for o in solution_model.objects if o.classifier.name == "ConstraintSystem")
     unknowns = sorted(_linked(system, "unknowns"), key=lambda u: _slot(u, "name"))
     names = [_slot(u, "name") for u in unknowns]
-    widths = [int(_slot(u, "bitWidth")) for u in unknowns]
+    widths = [_slot(u, "bitWidth") for u in unknowns]
+    if any(type(w) is not int or w < 1 for w in widths):
+        raise ValueError("Unknown bit widths must be positive integers")
     index = {id(u): k for k, u in enumerate(unknowns)}
     offsets, o = [], 0
     for w in widths:
@@ -174,33 +186,25 @@ def extract_spec(solution_model, iterations: Optional[int] = None) -> SystemSpec
         atoms.append(AtomSpec(const, {q: c for q, c in coeffs.items() if c}, kind))
 
     cfg = _linked(system, "config")
-    it = iterations
-    shots, adder = 1024, "RIPPLE_CARRY"
-    if cfg:
-        it = iterations if iterations is not None else _slot(cfg[0], "iterations")
-        shots = int(_slot(cfg[0], "shots"))
-        adder = _enum_name(_slot(cfg[0], "adder"))
-    return SystemSpec(names, widths, atoms, int(it) if it else None, shots, adder)
+    if len(cfg) != 1:
+        raise ValueError("ConstraintSystem must link exactly one SolverConfig")
+    settings = read_config(cfg[0])
+    return SystemSpec(names, widths, atoms, settings.iterations, settings.shots,
+                      settings.adder, settings.expression_bit_width, settings.expression_encoding)
 
 
 # --------------------------------------------------------------------------- #
 # Gate-list construction (pure Python, classically simulable)   [R2-R8]
 # --------------------------------------------------------------------------- #
 
-def _register_width(atoms: Sequence[AtomSpec]) -> int:
-    """R3: smallest B such that every atom's [emin, emax] fits in B-bit two's complement [NC10]."""
-    B = 2
-    for a in atoms:
-        lo, hi = a.bounds()
-        while not (-(1 << (B - 1)) <= lo and hi <= (1 << (B - 1)) - 1):
-            B += 1
-    return B
-
-
 def make_layout(spec: SystemSpec) -> Layout:
     """R1-R3, R5, R6: assign qubit indices (search, expression, temp, carry, flags, phase)."""
     n, m = spec.n, len(spec.atoms)
-    B = _register_width(spec.atoms)
+    B = spec.expression_bit_width
+    for atom in spec.atoms:
+        lo, hi = atom.bounds()
+        if not (-(1 << (B - 1)) <= lo and hi < (1 << (B - 1))):
+            raise ValueError(f"Configured expressionBitWidth={B} cannot hold atom range [{lo}, {hi}]")
     e = list(range(n, n + B))
     t = list(range(n + B, n + 2 * B))
     carry = n + 2 * B
@@ -284,14 +288,6 @@ def build_diffuser_ops(n: int) -> List[Op]:
     return ops
 
 
-def default_iterations(n: int, solutions: int = 1) -> int:
-    """R9: optimal number of Grover rounds floor(pi / (4 asin(sqrt(M/N)))), N = 2^n [Gro96][BBHT98]."""
-    N = 1 << n
-    if solutions <= 0 or solutions >= N:
-        return 0
-    return max(1, int(math.floor(math.pi / (4 * math.asin(math.sqrt(solutions / N))))))
-
-
 # --------------------------------------------------------------------------- #
 # BESSER emission   [R1, R2, R9, R10]
 # --------------------------------------------------------------------------- #
@@ -311,12 +307,12 @@ def _emit(circ: QuantumCircuit, op: Op) -> None:
 
 
 def build_circuit_from_spec(spec: SystemSpec, name: str = "KnapsackGrover") -> Tuple[QuantumCircuit, Layout]:
-    if spec.adder not in ("RIPPLE_CARRY", "RIPPLE", "CDKM", "VBE"):
+    if spec.adder != "RIPPLE_CARRY":
         raise NotImplementedError(f"Adder kind {spec.adder} not implemented (only ripple-carry)")
     if not spec.atoms:
         raise ValueError("ConstraintSystem has no atoms")
     L = make_layout(spec)
-    R = spec.iterations if spec.iterations is not None else default_iterations(L.n)   # R9
+    R = spec.iterations
 
     circ = QuantumCircuit(name, L.total)
     circ.add_creg(ClassicalRegister("c", L.n))
@@ -338,10 +334,9 @@ def build_circuit_from_spec(spec: SystemSpec, name: str = "KnapsackGrover") -> T
     return circ, L
 
 
-def t2(constraint_system: Any, iterations: Optional[int] = None,
-       name: str = "KnapsackGrover") -> Tuple[QuantumCircuit, Layout]:
+def t2(constraint_system: Any, name: str = "KnapsackGrover") -> Tuple[QuantumCircuit, Layout]:
     """M2M transformation T2: ConstraintSystem -> (BESSER QuantumCircuit, Layout)."""
-    spec = extract_spec(constraint_system, iterations)
+    spec = extract_spec(constraint_system)
     return build_circuit_from_spec(spec, name)
 
 
@@ -391,13 +386,13 @@ def _self_check(names=None, max_aer_qubits: int = 20) -> None:
 
     from besser.generators.qiskit import QiskitGenerator
     from models.instances import INSTANCES
+    from models.solver_configs import CONFIGS
     from transformations import t1
 
     for name in names or INSTANCES:
-        sol = t1.transform(INSTANCES[name])[0]
+        sol = t1.transform(INSTANCES[name], CONFIGS[name])[0]
         truth = set(t1.solutions_of(sol))                     # tuples in unknown-name order
-        spec = extract_spec(sol, iterations=default_iterations(
-            sum(w for w in extract_spec(sol).unknown_widths), len(truth)))
+        spec = extract_spec(sol)
         L = make_layout(spec)
         oracle = build_oracle_ops(spec, L)
         for bits in itertools.product([0, 1], repeat=L.n):

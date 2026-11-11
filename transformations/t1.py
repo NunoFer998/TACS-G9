@@ -11,22 +11,12 @@ Rules (traceable to docs/concept_list.md section 3 and the references there):
 
 The trace maps every created object to its source, used by the backward mapping (bonus).
 """
-from dataclasses import dataclass
-
 from besser.BUML.metamodel.object import ObjectModel
 
 from solution_dsl.solution_metamodel import (
-    ConstraintSystem, Unknown, Atom, And, LinearExpression, Term, SolverConfig,
-    Relation, AdderKind,
+    ConstraintSystem, Unknown, Atom, And, LinearExpression, Term, Relation,
 )
-
-
-@dataclass
-class SolverSettings:
-    """Solver configuration model (input of T1): Grover rounds, shots, adder choice."""
-    iterations: int = 1
-    shots: int = 1024
-    adder: str = "RIPPLE_CARRY"      # AdderKind literal name
+from solution_dsl.solver_config import config_object, read_config
 
 
 def _literal(enum, name):
@@ -108,11 +98,10 @@ def r5_root(w_atom, v_atom, problem, pname, objs, trace):
     return root
 
 
-def r6_config(settings, pname, objs):
-    """R6: solver config comes from the input settings."""
-    config = SolverConfig(f"{pname}_config").attributes(
-        iterations=settings.iterations, shots=settings.shots,
-        adder=_literal(AdderKind, settings.adder)).build()
+def r6_config(source_config, pname, objs, trace):
+    """R6: copy the explicit input config without changing or sharing its object."""
+    config = read_config(source_config).to_object(f"{pname}_config")
+    trace[config] = source_config
     objs.add(config)
     return config
 
@@ -125,9 +114,9 @@ def r1_system(problem, unknown_of, root, config, pname, objs, trace):
     return system
 
 
-def transform(source: ObjectModel, settings: SolverSettings = None):
+def transform(source: ObjectModel, configuration: ObjectModel):
     """Return (solution ObjectModel, trace {target object: source object})."""
-    settings = settings or SolverSettings()
+    source_config = config_object(configuration)
     problem = _objects_of(source, "KnapsackProblem")[0]
     pname = _id(_slot(problem, "name"))
     items = _objects_of(source, "Item")
@@ -137,7 +126,7 @@ def transform(source: ObjectModel, settings: SolverSettings = None):
     w_atom = r3_weight_atom(problem, items, unknown_of, pname, objs, trace)
     v_atom = r4_value_atom(problem, items, unknown_of, pname, objs, trace)
     root = r5_root(w_atom, v_atom, problem, pname, objs, trace)
-    config = r6_config(settings, pname, objs)
+    config = r6_config(source_config, pname, objs, trace)
     r1_system(problem, unknown_of, root, config, pname, objs, trace)
 
     return ObjectModel(name=f"{pname}_solution", objects=objs), trace
@@ -159,10 +148,11 @@ def save(model, out_dir="out/t1"):
     return out
 
 
-def run_file(path, out_dir="out/t1"):
+def run_file(path, config_path, out_dir="out/t1"):
     """Run T1 on the object model of an editor-exported .py and save the solution model."""
     import runpy
-    model, _ = transform(runpy.run_path(path)["object_model"])
+    model, _ = transform(runpy.run_path(path)["object_model"],
+                         runpy.run_path(config_path)["object_model"])
     print(f"{path}: {len(model.objects)} objects -> {save(model, out_dir)}")
     return model
 
@@ -188,12 +178,12 @@ def solutions_of(model):
     return out
 
 
-def check(source):
+def check(source, configuration):
     """Self-check: solutions of the T1 output == brute force on the problem. Returns (n, ok)."""
     from validation.baseline import read_problem, brute_force
     _, cap, v, items = read_problem(source)
     expected = brute_force(cap, v, items)
-    got = solutions_of(transform(source)[0])
+    got = solutions_of(transform(source, configuration)[0])
     # unknown order is sorted by name(y_<item>), baseline sorts items by name: same order
     return len(expected), sorted(got) == sorted(expected)
 
@@ -202,10 +192,13 @@ if __name__ == "__main__":
     import sys
     args = sys.argv[1:]
     if args and args[0].endswith(".py"):
-        run_file(args[0])
+        if len(args) != 2:
+            raise SystemExit("Usage: python -m transformations.t1 problem.py solver_config.py")
+        run_file(args[0], args[1])
     else:                                    # instance names from models/instances.py (default: all)
         from models.instances import INSTANCES
+        from models.solver_configs import CONFIGS
         for name in args or INSTANCES:
-            n, ok = check(INSTANCES[name])
-            out = save(transform(INSTANCES[name])[0])
+            n, ok = check(INSTANCES[name], CONFIGS[name])
+            out = save(transform(INSTANCES[name], CONFIGS[name])[0])
             print(f"{name:10s} solutions={n:2d}  T1 matches brute force: {'OK' if ok else 'FAIL'}  -> {out}")

@@ -21,6 +21,10 @@ AdderKind = Enumeration(name="AdderKind", literals={
     EnumerationLiteral(name="QFT"),            # Draper 2000
 })
 
+ExpressionEncoding = Enumeration(name="ExpressionEncoding", literals={
+    EnumerationLiteral(name="TWOS_COMPLEMENT"),
+})
+
 # --- Classes ---------------------------------------------------------------
 
 ConstraintSystem = Class(name="ConstraintSystem", attributes={
@@ -52,6 +56,8 @@ SolverConfig = Class(name="SolverConfig", attributes={
     Property(name="iterations", type=IntegerType),    # Grover rounds
     Property(name="shots", type=IntegerType),
     Property(name="adder", type=AdderKind),
+    Property(name="expressionBitWidth", type=IntegerType),
+    Property(name="expressionEncoding", type=ExpressionEncoding),
 })
 
 # --- Generalizations -------------------------------------------------------
@@ -96,8 +102,8 @@ term_unknown = BinaryAssociation(name="term_unknown", ends={
 })
 
 system_config = BinaryAssociation(name="system_config", ends={
-    Property(name="configOf", type=ConstraintSystem, multiplicity=Multiplicity(1, 1)),
-    Property(name="config", type=SolverConfig, multiplicity=Multiplicity(0, 1), is_composite=True),
+    Property(name="configOf", type=ConstraintSystem, multiplicity=Multiplicity(0, 1)),
+    Property(name="config", type=SolverConfig, multiplicity=Multiplicity(1, 1), is_composite=True),
 })
 
 # --- OCL constraints -------------------------------------------------------
@@ -127,11 +133,14 @@ constraints = {
                expression="context SolverConfig inv iterationsNonNegative: self.iterations >= 0"),
     Constraint(name="shotsPositive", context=SolverConfig, language="OCL",
                expression="context SolverConfig inv shotsPositive: self.shots >= 1"),
+    Constraint(name="expressionBitWidthPositive", context=SolverConfig, language="OCL",
+               expression="context SolverConfig inv expressionBitWidthPositive: "
+                          "self.expressionBitWidth >= 1"),
 }
 
 solution_metamodel = DomainModel(
     name="LinearConstraintsDSL",
-    types={Relation, AdderKind, ConstraintSystem, Unknown, Formula, Atom, Junction,
+    types={Relation, AdderKind, ExpressionEncoding, ConstraintSystem, Unknown, Formula, Atom, Junction,
            And, Or, LinearExpression, Term, SolverConfig},
     associations={system_unknowns, system_root, junction_operands, atom_expression,
                   expression_terms, term_unknown, system_config},
