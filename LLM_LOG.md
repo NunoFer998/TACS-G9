@@ -35,7 +35,9 @@
 	prefix, so it relied on a naming convention and never used the trace, and the demo's
 	check compared names against the baseline, not the problem model. Found by reading
 	`decode_items`; fixed by going unknown -> trace -> `Item` and checking weight and value
-	on the problem. The full demo (6 instances) was not rerun after the change.
+	on the problem. The full demo (all 6 instances) was rerun after the change: model rounds equal
+	the optimal rounds, measured success 94.3-97.2%, every most frequent answer is a solution
+	(`f4_none` has none; `f7_sub5` is not simulated).
 
 ## 2026-11-10 - Review: Explicit solver configuration models
 

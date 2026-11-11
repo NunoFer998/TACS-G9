@@ -8,7 +8,7 @@ Last updated: 11 Nov (state of `main` at b1ac39c, demo checked).
 - [x] **T2**: solution model → BESSER quantum circuit model (`transformations/t2.py`, oracle checked classically on all 2^n inputs)
 - [x] T1: every rule (R1–R6) cites its reference in a comment
 - [x] T2: every rule (R1–R11) cites its reference in a comment
-- [ ] Every rule cites its reference in the report
+- [x] Every rule cites its reference in the report (rule tables in the Transformations section)
 - [x] Solver config modelled explicitly: mandatory model input with rounds, shots, adder, signed encoding and expression width. Instance configs are selected against the baseline; T1/T2/demo/self-check use the same settings, without hidden defaults or round overrides.
 - [x] Decoding of measured bitstrings → items, from the T2 layout (`decode_bitstring` / `decode_items`)
 - [x] Bonus: map solutions back to the problem DSL (`transformations/backward.py`, via the T1 trace; `python -m transformations.backward` checks all 2^n assignments against brute force)
@@ -38,7 +38,7 @@ Last updated: 11 Nov (state of `main` at b1ac39c, demo checked).
 - [ ] Report (~2 pages, written by you, short and personal) covering:
   - [x] test instances (written; the table shows the real T2 qubit counts)
   - [x] classical baseline (written)
-  - [ ] transformations + references
+  - [x] transformations + references (written; needs trimming and a rewrite in the student's own words)
   - [x] validation results
   - [x] limitations (incl. M taken from the baseline, f7_sub5 over 20 qubits)
 - [ ] LLM usage log for Part II (tool/model, goal, prompt summary, accepted, **what was wrong + how detected/fixed**)
@@ -51,5 +51,6 @@ Last updated: 11 Nov (state of `main` at b1ac39c, demo checked).
 
 ## Status summary
 Done: instances, baseline, T1, T2, generated Qiskit code (`out/t3`), demo command, validation table, setup fix, solver configuration with Grover rounds (Inês), T2 rule references, validation results and limitations in the report.
-In progress: report, Part II LLM log.
-Missing: Transformations section with rule references in the report, domain-terms output in the generated script.
+Also done: backward mapping bonus (`transformations/backward.py`), Transformations section in the report, Part II LLM log entries (each with what was wrong and how it was found).
+In progress: trim the report to about 2 pages and rewrite the drafted parts in the student's own words.
+Known and accepted: the generated script prints raw counts (it is generated code and is not edited by hand; `python -m demo` decodes the counts to item names); `f7_sub5` (25 qubits) is checked at oracle level only; no `.json` export of the models (the converter is missing from the installed BESSER).
