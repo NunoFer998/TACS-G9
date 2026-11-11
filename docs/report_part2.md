@@ -29,20 +29,14 @@ After implementing T2 we had to revisit this table a second time. The estimate a
 
 ## Classical baseline
 
-To tell whether the quantum chain is correct, we first need to know the right answer for every instance before running it on Aer. So we wanted a baseline that gives us three things: (1) whether the instance is feasible, (2) the exact list of solutions, so that we can check that every bitstring measured with high probability is one of them, and (3) their number M, which we need to configure Grover itself (see below). The answers have to be exact; an approximate answer cannot validate anything.
+We wrote `validation/baseline.py` to get the correct answer for every instance before running anything on Aer. It reads the same problem DSL models as T1 and runs two exact methods:
 
-We started from the assignment, which suggests brute force as a baseline [TACS26, 7.3], and looked at what is normally used for knapsack, where the textbook exact method is dynamic programming [KPP04, ch. 2]. Heuristics such as greedy by value/weight ratio are faster, but they can miss the optimum and so do not give an exact answer. An external ILP solver would be exact too, but it adds a dependency and gives us nothing extra at this size.
+- **Brute force**, as the assignment suggests [TACS26, 7.3]. It tries all 2^n subsets and keeps the ones with weight ≤ C and value ≥ V. This gives us the full list of solutions, which we compare with what Grover measures, and their number M. With n ≤ 5 it checks at most 32 subsets.
+- **Dynamic programming**, the usual exact method for knapsack [KPP04, ch. 2]. It finds the best value within capacity C in O(n·C), and the instance is feasible iff that value is ≥ V. It doesn't list the solutions, so we use it as a second check: the script confirms that both methods agree on every instance.
 
-In the end we implemented both brute force and dynamic programming in `validation/baseline.py`, reading the same problem DSL models that feed T1, and the script checks that they agree on every instance:
+We left out greedy and other heuristics because they can miss the optimum.
 
-- **Brute force** enumerates all 2^n subsets and keeps those with weight ≤ C and value ≥ V. It is the only one of the two that gives the full list of solutions and their number, which we call M: the number of subsets that satisfy both constraints. In Grover's terms these are the marked states the oracle must flag, out of N = 2^n possible subsets. With n ≤ 5 this is at most 32 subsets, so the exponential cost does not matter here.
-- **Dynamic programming** computes the best value that fits in capacity C in O(n·C) time; the instance is feasible iff that value is ≥ V. Knapsack is only weakly NP-complete, so dynamic programming solves instances with small numbers like ours efficiently. It does not list the solutions, but it is an independent check on brute force: two methods that work in different ways and agree on feasibility make a bug in the baseline itself unlikely.
-
-A classical computer will always win at this size; the point of the project is the correctness of the transformation chain, not a speedup.
-
-We needed M for more than validation, because it is also an input to the chain: the number of Grover rounds is `floor(π/4 · √(2^n / M))` [BBHT98], and with too many or too few rounds the probability of measuring a solution drops. For f4 (n = 4, M = 1) this gives 3 rounds and a theoretical success probability of 0.96; for f4_multi (M = 5) a single round is enough. When M = 0 there is nothing to amplify, which is the case f4_none is meant to show.
-
-Reproduce with `python -m validation.baseline`.
+We also use M to set the number of Grover rounds, `floor(π/4 · √(2^n / M))` [BBHT98]: 3 rounds for f4 (M = 1, 96% success), 1 round for f4_multi (M = 5), and nothing to amplify for f4_none (M = 0). Run it with `python -m validation.baseline`.
 
 ## Transformations
 
@@ -50,15 +44,40 @@ Reproduce with `python -m validation.baseline`.
 
 ## Validation results
 
-[Later: quantum vs baseline per instance.]
+`python -m demo` runs the whole chain on every instance: baseline → T1 (with the instance's solver configuration from `models/solver_configs.py`) → T2 → BESSER generator → Aer (1024 shots). It then decodes the bitstrings back into items using the T2 layout, compares them with brute force and writes `out/validation.md`. As suggested for class C [TACS26, 7.3], we measure the probability of getting a valid solution against the theory sin²((2R+1)θ), with θ = asin √(M/N) [BBHT98], and count the oracle calls R.
+
+| Instance | Qubits | M | Rounds = oracle calls | P theory | P measured | Most frequent answer |
+|---|---|---|---|---|---|---|
+| toy | 15 | 1 | 2 | 94.5% | 95.5% | {a, b} |
+| tiny | 18 | 1 | 3 | 96.1% | 95.5% | {a, b, c} |
+| f4 | 20 | 1 | 3 | 96.1% | 95.4% | {i2, i4} |
+| f4_multi | 20 | 5 | 1 | 95.7% | 96.1% | {i2, i4} (one of the 5) |
+| f4_none | 20 | 0 | 0 | 0% | 0% | none exists |
+| f7_sub5 | 25 | 1 | 4 | 99.9% | not simulated | – |
+
+Every simulated instance lands within about 1 point of the theory (with 1024 shots one standard deviation is about 0.7 points, and Aer isn't seeded, so the numbers move a bit between runs), and the most frequent answer is always a real solution. f4_none behaves as it should: 0 rounds, nothing valid measured, answer "infeasible".
+
+Building the validation also caught bugs we wouldn't have seen otherwise:
+
+1. T1 had the Grover rounds fixed at 1, so f4 only reached about 47% instead of 96%. T2's self-check hid it because it computed its own rounds; the demo compares the rounds in the solution model with the optimum, and that's how we spotted it. Fix: the solver configuration is now an explicit model that T1 requires, with no hidden defaults.
+2. T2 read 0 rounds as "missing" and fell back to 3, so f4_none ran 3 rounds. We noticed because its circuit was bigger than expected. T2 now accepts 0.
+3. Qiskit orders bits little-endian, which is easy to get backwards. The decoded answers matching brute force on every instance confirm the mapping is right.
+
+T2 also checks the oracle classically on all 2^n inputs, making sure it marks exactly the solutions and leaves every ancilla at 0.
 
 ## Limitations
 
-**Grover rounds come from the baseline.** The number of rounds is an input of the chain, stored in the solver configuration model (`models/solver_configs.py`), and neither T1 nor T2 computes it. We set it to floor(π/4 · √(2^n / M)) [BBHT98], where M, the number of solutions, comes from the classical brute-force baseline; `validation/test_solver_config.py` checks that every configured value equals that formula. The consequence is that M has to be known before the quantum run, which is only possible for instances small enough to brute-force, so the quantum run validates the chain and does not speed anything up. For an unknown M, [BBHT98] describes a procedure that tries randomly chosen round counts; we did not implement it.
+- **Grover rounds come from the baseline.** The number of rounds is an input of the chain, stored in the solver configuration model (`models/solver_configs.py`), and neither T1 nor T2 computes it. We set it to floor(π/4 · √(2^n / M)) [BBHT98], where M, the number of solutions, comes from the classical brute-force baseline; `validation/test_solver_config.py` checks that every configured value equals that formula. The consequence is that M has to be known before the quantum run, which is only possible for instances small enough to brute-force, so the quantum run validates the chain and does not speed anything up. For an unknown M, [BBHT98] describes a procedure that tries randomly chosen round counts; we did not implement it.
+- **Qubits.** The ripple-carry adder [CDKM04] adds 4 to 5 qubits over our estimate, so f7_sub5 (25 qubits) is only checked classically and f1 is out of reach. The QFT adder [Dra00] is in the metamodel but not implemented in T2.
+- **Output.** The generated script prints raw counts. Turning them into items is done by the demo, because the BESSER template has no hook for it and generated code must not be edited.
+- **Formulas.** T2 only handles an And of `<=`/`=` constraints, no Or.
+- **No speedup.** At this size dynamic programming answers instantly, and simulating the circuit costs 2^qubits memory. The goal is a correct chain, not performance.
+- **Setup.** The pip package of the BESSER fork is missing the Qiskit template, so `requirements.txt` installs BESSER in editable mode.
 
 ## References
 
 - [CDKM04] S. A. Cuccaro, T. G. Draper, S. A. Kutin, D. P. Moulton. "A new quantum ripple-carry addition circuit", arXiv:quant-ph/0410184, 2004.
+- [Dra00] T. G. Draper. "Addition on a quantum computer", arXiv:quant-ph/0008033, 2000.
 - [KPP04] H. Kellerer, U. Pferschy, D. Pisinger. Knapsack Problems. Springer, 2004.
 - [BBHT98] M. Boyer, G. Brassard, P. Høyer, A. Tapp. “Tight bounds on quantum searching”, Fortschritte der Physik, 1998.
 - [Pis] D. Pisinger, low-dimensional 0/1 knapsack instances, as collected in https://github.com/dnlfm/knapsack-01-instances/tree/main/pisinger_instances_01_KP/low-dimensional
