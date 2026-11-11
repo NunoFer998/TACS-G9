@@ -68,6 +68,14 @@ f4_none  n=4 qubits=20 B=6 solutions=0 oracle OK
 T2 is in [`transformations/t2.py`](transformations/t2.py): `t2(solution_model)` returns the BESSER circuit and its
 qubit layout; `decode_items(bitstring, layout)` maps a measured bitstring back to item names.
 
+## Backward mapping (bonus)
+
+```bash
+python -m transformations.backward           # bitstring -> problem Items via the T1 trace, checked against brute force (expect OK x6)
+```
+
+[`transformations/backward.py`](transformations/backward.py) maps a measured bitstring back to the problem model's `Item` objects; `python -m demo` uses it for the "Most frequent answer" column.
+
 ## Explicit solver configuration
 
 T1 takes two model inputs: `transform(problem_model, configuration_model)`.
@@ -162,18 +170,19 @@ Deadline: November 11 (assignment §7.4).
 | Working demo with a single documented command | [`demo.py`](demo.py) | Done (`python -m demo`) |
 | Classical baseline (brute force + DP): the correct answer for each instance | [`validation/baseline.py`](validation/baseline.py) | Done |
 | Validation: Aer simulation results vs. the classical baseline (success probability, oracle calls) | `out/validation.md` (written by `python -m demo`) | Done: measured within about 1 point of theory on every simulated instance; `f7_sub5` (25 qubits) is oracle-checked only |
-| Report (~2 pages) | [`docs/report_part2.md`](docs/report_part2.md) | In progress (instances, baseline, validation, limitations written; transformations to do) |
+| Report (~2 pages) | [`docs/report_part2.md`](docs/report_part2.md) | Written, being trimmed to about 2 pages |
 | LLM usage log | [`LLM_LOG.md`](LLM_LOG.md) | In progress (Part II entries being added by each member) |
 
 ## Structure
 
 | Folder | Content |
 |---|---|
-| [`problem_dsl/`](problem_dsl/) | Problem metamodel + OCL |
-| [`solution_dsl/`](solution_dsl/) | Solution metamodel + OCL |
-| [`models/`](models/) | Problem DSL object models of the test instances |
-| [`validation/`](validation/) | Classical baseline and validation |
-| [`instances/`](instances/) | Test instances + brute-force checker |
+| [`problem_dsl/`](problem_dsl/) | Problem metamodel + OCL (`*_objectmodel.py/.json` are BESSER editor exports) |
+| [`solution_dsl/`](solution_dsl/) | Solution metamodel + OCL, solver config helpers (`*_objectmodel.py/.json` are editor exports) |
+| [`models/`](models/) | Problem DSL object models of the test instances and their solver configurations |
+| [`transformations/`](transformations/) | T1, T2 and the backward mapping |
+| [`validation/`](validation/) | Classical baseline (brute force + DP) and solver-config tests |
+| [`instances/`](instances/) | Description of the benchmark instances (the models are in `models/instances.py`) |
 | [`docs/`](docs/) | Reports (incl. [`report_part2.md`](docs/report_part2.md)), concept tables, diagrams |
 | [`LLM_LOG.md`](LLM_LOG.md) | LLM usage log |
 

@@ -25,7 +25,7 @@ from besser.utilities.buml_code_builder.quantum_model_builder import quantum_mod
 
 from models.instances import INSTANCES
 from models.solver_configs import CONFIGS
-from transformations import t1, t2
+from transformations import backward, t1, t2
 from validation.baseline import (read_problem, brute_force, grover_rounds,
                                  grover_success_probability)
 
@@ -55,7 +55,7 @@ def run_instance(name):
     best_rounds = grover_rounds(n, m)
 
     # 2-3. T1, T2
-    sol_model, _trace = t1.transform(model, CONFIGS[name])
+    sol_model, trace = t1.transform(model, CONFIGS[name])
     circ, layout = t2.t2(sol_model)
     rounds = t2.extract_spec(sol_model).iterations
     os.makedirs(f"{OUT}/t2", exist_ok=True)
@@ -80,8 +80,11 @@ def run_instance(name):
         return tuple(values[u] for u in layout.unknown_names)
     valid = sum(c for b, c in counts.items() if choice(b) in solutions)
     top = max(counts, key=counts.get)
-    row.update(valid=valid, top="{" + ", ".join(t2.decode_items(top, layout)) + "}",
-               top_ok=choice(top) in solutions)
+    # backward mapping: bitstring -> problem-model Items via the T1 trace, checked on the problem itself
+    packed = backward.back(top, layout, sol_model, trace)
+    problem = next(o for o in model.objects if o.classifier.name == "KnapsackProblem")
+    row.update(valid=valid, top="{" + ", ".join(sorted(t1._slot(i, "name") for i in packed)) + "}",
+               top_ok=choice(top) in solutions and backward.is_solution(packed, problem))
     return row
 
 
