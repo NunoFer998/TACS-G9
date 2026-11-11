@@ -11,7 +11,7 @@ Last updated: 11 Nov (state of `main` at b1ac39c, demo checked).
 - [ ] Every rule cites its reference in the report
 - [x] Solver config modelled explicitly: mandatory model input with rounds, shots, adder, signed encoding and expression width. Instance configs are selected against the baseline; T1/T2/demo/self-check use the same settings, without hidden defaults or round overrides.
 - [x] Decoding of measured bitstrings → items, from the T2 layout (`decode_bitstring` / `decode_items`)
-- [ ] Bonus: map solutions back to the problem DSL
+- [x] Bonus: map solutions back to the problem DSL (`transformations/backward.py`, via the T1 trace; `python -m transformations.backward` checks all 2^n assignments against brute force)
 
 ## 7.2 M2T generation (10%, with demo)
 - [x] Qiskit Python generated with the BESSER generator, saved in `out/t3/<instance>/qiskit_circuit.py`

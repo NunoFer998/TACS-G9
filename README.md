@@ -68,6 +68,14 @@ f4_none  n=4 qubits=20 B=6 solutions=0 oracle OK
 T2 is in [`transformations/t2.py`](transformations/t2.py): `t2(solution_model)` returns the BESSER circuit and its
 qubit layout; `decode_items(bitstring, layout)` maps a measured bitstring back to item names.
 
+## Backward mapping (bonus)
+
+```bash
+python -m transformations.backward           # bitstring -> problem Items via the T1 trace, checked against brute force (expect OK x6)
+```
+
+[`transformations/backward.py`](transformations/backward.py) maps a measured bitstring back to the problem model's `Item` objects; `python -m demo` uses it for the "Most frequent answer" column.
+
 ## Explicit solver configuration
 
 T1 takes two model inputs: `transform(problem_model, configuration_model)`.

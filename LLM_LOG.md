@@ -24,6 +24,19 @@
 	- T2 turned 0 rounds into a default of 3 (f4_none). Found by checking the
 	  size of the generated circuit (10 operations expected).
 
+## 2026-11-11 - Backward mapping (bonus)
+
+- Tool: GitHub Copilot in VS Code.
+- Request: map measured bitstrings back to the problem model, using the T1 trace.
+- Output: [backward.py](transformations/backward.py); `demo.py` uses it for the "Most frequent answer" column and requires the answer to be a solution on the original problem.
+- Verification: `python -m transformations.backward` tries all 2^n assignments on the 6
+	instances and matches brute force; `python -m demo toy f4_multi` still shows valid answers.
+- What was wrong: before this, `decode_items` recovered item names by stripping the `y_`
+	prefix, so it relied on a naming convention and never used the trace, and the demo's
+	check compared names against the baseline, not the problem model. Found by reading
+	`decode_items`; fixed by going unknown -> trace -> `Item` and checking weight and value
+	on the problem. The full demo (6 instances) was not rerun after the change.
+
 ## 2026-11-10 - Review: Explicit solver configuration models
 
 - Tool: GitHub Copilot in VS Code.

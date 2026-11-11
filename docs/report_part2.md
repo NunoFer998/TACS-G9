@@ -42,7 +42,7 @@ We also use M to set the number of Grover rounds, `floor(π/4 · √(2^n / M))` 
 
 Both transformations are plain Python functions over BESSER models, one function per rule, and each rule cites its reference in the code comment next to it (`transformations/t1.py`, `transformations/t2.py`). The full concept mapping is in `docs/concept_list.md`.
 
-**T1: problem model → solution model** (`transformations/t1.py`). The input is a `KnapsackProblem` with its items and the solver configuration model; the output is a `ConstraintSystem` of linear integer constraints, plus a trace `{created object: source object}` that a backward mapping could use.
+**T1: problem model → solution model** (`transformations/t1.py`). The input is a `KnapsackProblem` with its items and the solver configuration model; the output is a `ConstraintSystem` of linear integer constraints, plus a trace `{created object: source object}`. The backward mapping (`transformations/backward.py`) uses it: a measured bitstring is decoded to unknowns with the T2 layout, and the T1 trace maps each unknown to its problem-model `Item`, so solutions are mapped back through the trace and checked on the original problem.
 
 | Rule | Problem DSL | Solution DSL | Reference |
 |---|---|---|---|
