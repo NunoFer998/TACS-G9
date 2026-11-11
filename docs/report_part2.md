@@ -54,7 +54,7 @@ Reproduce with `python -m validation.baseline`.
 
 ## Limitations
 
-[Later.]
+**Grover rounds come from the baseline.** The number of rounds is an input of the chain, stored in the solver configuration model (`models/solver_configs.py`), and neither T1 nor T2 computes it. We set it to floor(π/4 · √(2^n / M)) [BBHT98], where M, the number of solutions, comes from the classical brute-force baseline; `validation/test_solver_config.py` checks that every configured value equals that formula. The consequence is that M has to be known before the quantum run, which is only possible for instances small enough to brute-force, so the quantum run validates the chain and does not speed anything up. For an unknown M, [BBHT98] describes a procedure that tries randomly chosen round counts; we did not implement it.
 
 ## References
 
